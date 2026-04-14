@@ -30,6 +30,9 @@ class User(db.Model):
             return req.host_url.rstrip('/') + '/static/avatars/' + self.avatar
         return req.host_url.rstrip('/') + '/static/img/default_avatar.png'
 
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
