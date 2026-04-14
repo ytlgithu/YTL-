@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{% if post %}编辑文章{% else %}写文章{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if post %}✏️ 编辑文章{% else %}📝 写文章{% endif %}</h1>
+</div>
+
+<form method="POST" class="form-card">
+  <div class="form-group">
+    <label>标题 *</label>
+    <input type="text" name="title" value="{{ post.title if post else '' }}" required placeholder="文章标题">
+  </div>
+  <div class="form-group">
+    <label>摘要</label>
+    <input type="text" name="summary" value="{{ post.summary if post else '' }}" placeholder="可选，不填则自动截取">
+  </div>
+  <div class="form-group">
+    <label>内容 *（支持 Markdown）</label>
+    <div class="editor-toolbar">
+      <button type="button" class="toolbar-btn" onclick="insertMd('**', '**')" title="粗体">B</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('*', '*')" title="斜体">I</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('# ', '')" title="标题">H</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('`', '`')" title="代码">`</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('\n```\n', '\n```')" title="代码块">```</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('[', '](url)')" title="链接">[链接]</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('\n- ', '')" title="列表">•</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('\n1. ', '')" title="有序列表">1.</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('\n> ', '')" title="引用">"</button>
+      <button type="button" class="toolbar-btn" onclick="insertMd('\n---\n', '')" title="分割线">—</button>
+      <span class="toolbar-sep">|</span>
+      <label class="toolbar-btn upload-btn" title="上传图片">
+        📷 图片
+        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="uploadImage(this)">
+      </label>
+      <span id="uploadStatus" class="upload-status"></span>
+    </div>
+    <textarea name="content" id="editor" rows="20" class="md-editor" required>{{ post.content if post else '' }}</textarea>
+    <div class="editor-hint">
+      💡 提示：上传图片后会自动插入 Markdown 图片链接
+    </div>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary btn-lg">发布</button>
+    <a href="{{ url_for('post_list') }}" class="btn btn-outline">取消</a>
+  </div>
+</form>
+
+<script>
+// 插入 Markdown 语法
+function insertMd(prefix, suffix) {
+  const editor = document.getElementById('editor');
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const text = editor.value;
+  const selected = text.substring(start, end);
+  
+  editor.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
+  editor.focus();
+  editor.selectionStart = start + prefix.length;
+  editor.selectionEnd = start + prefix.length + selected.length;
+}
+
+// 上传图片
+function uploadImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const status = document.getElementById('uploadStatus');
+  status.textContent = '⏳ 上传中...';
+  status.className = 'upload-status uploading';
+  
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  fetch('/posts/upload-image', {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      status.textContent = '✅ 上传成功';
+      status.className = 'upload-status success';
+      // 自动插入 Markdown 图片链接
+      insertMd('\n' + data.markdown + '\n', '');
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    } else {
+      status.textContent = '❌ ' + data.error;
+      status.className = 'upload-status error';
+    }
+  })
+  .catch(err => {
+    status.textContent = '❌ 上传失败';
+    status.className = 'upload-status error';
+    console.error(err);
+  });
+  
+  // 清空文件选择，允许重复选择同一文件
+  input.value = '';
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<!-- highlight.js VS Code Dark+ for editor -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+<style>
+.md-editor {
+  font-family: Consolas, Monaco, 'Cascadia Code', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  tab-size: 4;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 8px;
+  background: #3c3c3c;
+  border: 1px solid #4c4c4c;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  color: #cccccc;
+  transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+  background: #505050;
+  border-color: #6c6c6c;
+  color: #fff;
+}
+
+.upload-btn {
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.toolbar-sep {
+  color: #555;
+  margin: 0 4px;
+}
+
+.upload-status {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #cccccc;
+}
+
+.upload-status.uploading { color: #dcdcaa; }
+.upload-status.success { color: #4ec9b0; }
+.upload-status.error { color: #f14c4c; }
+
+.editor-hint {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* 表单 label 适配 */
+.form-group label {
+  color: #333;
+  margin-bottom: 6px;
+}
+
+#editor {
+  border-radius: 0 0 4px 4px;
+  border-color: #3c3c3c;
+}
+
+#editor:focus {
+  outline: none;
+  border-color: #007acc;
+}
+</style>
+{% endblock %}

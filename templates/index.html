@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}YTL 开发平台 - 首页{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>⚡ YTL 开发平台</h1>
+  <p>代码仓库 · 技术博客 · 文件共享</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="num">{{ stats.repo_count }}</div><div class="lbl">仓库</div></div>
+  <div class="stat-card"><div class="num">{{ stats.post_count }}</div><div class="lbl">文章</div></div>
+  <div class="stat-card"><div class="num">{{ stats.file_count }}</div><div class="lbl">文件</div></div>
+  <div class="stat-card"><div class="num">{{ stats.user_count }}</div><div class="lbl">用户</div></div>
+</div>
+
+<div class="home-grid">
+  <div class="home-section">
+    <div class="section-header">
+      <h2>📦 最近更新仓库</h2>
+      {% if cu %}<a href="{{ url_for('repo_new') }}" class="btn btn-sm btn-primary">新建仓库</a>{% endif %}
+    </div>
+    {% if repos %}
+      <ul class="repo-list">
+        {% for r in repos %}
+        <li>
+          <a href="{{ url_for('repo_view', repo_id=r.id) }}" class="repo-name">{{ r.name }}</a>
+          <span class="visibility-badge">{{ '🌐' if r.is_public else '🔒' }}</span>
+          <span class="repo-meta">{{ r.file_count }} 文件 · {{ r.total_size_display }} · {{ r.updated_at|time_since }}</span>
+          {% if r.description %}<p class="repo-desc">{{ r.description }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">暂无仓库</p>
+    {% endif %}
+    <a href="{{ url_for('repo_list') }}" class="link-more">查看全部 →</a>
+  </div>
+
+  <div class="home-section">
+    <div class="section-header">
+      <h2>📝 最新文章</h2>
+      {% if cu %}<a href="{{ url_for('post_new') }}" class="btn btn-sm btn-primary">写文章</a>{% endif %}
+    </div>
+    {% if posts %}
+      <ul class="post-list">
+        {% for p in posts %}
+        <li>
+          <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
+          <span class="visibility-badge">{{ '🌐' if p.is_public else '🔒' }}</span>
+          <span class="post-meta">{{ p.author.username }} · {{ p.created_at|time_since }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">暂无文章</p>
+    {% endif %}
+    <a href="{{ url_for('post_list') }}" class="link-more">查看全部 →</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const timeSince = (date) => {
+  const s = Math.floor((Date.now() - new Date(date)) / 1000);
+  if (s < 60) return '刚刚';
+  if (s < 3600) return Math.floor(s/60) + '分钟前';
+  if (s < 86400) return Math.floor(s/3600) + '小时前';
+  if (s < 604800) return Math.floor(s/86400) + '天前';
+  return new Date(date).toLocaleDateString();
+};
+document.querySelectorAll('[data-time]').forEach(el => {
+  el.textContent = timeSince(el.dataset.time);
+});
+</script>
+{% endblock %}

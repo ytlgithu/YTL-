@@ -1,0 +1,265 @@
+﻿{% extends "base.html" %}
+{% block title %}{{ repo.name }} - 仓库{% endblock %}
+{% block extra_css %}
+<style>
+/* ================================================
+   整体布局
+   ================================================ */
+.repo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* 仓库标题区 */
+.repo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e1e4e8;
+  margin-bottom: 16px;
+}
+.repo-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #24292e;
+}
+.repo-desc {
+  font-size: 14px;
+  color: #586069;
+}
+
+/* 工具栏 */
+.toolbar {
+  background: #f6f8fa;
+  border: 1px solid #d1d5da;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+.breadcrumb a { color: #0366d6; text-decoration: none; padding: 2px 4px; border-radius: 3px; }
+.breadcrumb a:hover { text-decoration: underline; background: #f1f8ff; }
+.breadcrumb .sep { color: #586069; }
+.breadcrumb .current { color: #24292e; font-weight: 500; }
+
+.toolbar-right { display: flex; gap: 6px; flex-shrink: 0; }
+.toolbar-btn {
+  background: #f6f8fa;
+  border: 1px solid #d1d5da;
+  color: #24292e;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  transition: all 0.1s;
+}
+.toolbar-btn:hover { background: #f3f4f6; border-color: #d1d5da; }
+.toolbar-btn.primary { background: #2ea44f; border-color: #2ea44f; color: white; }
+.toolbar-btn.primary:hover { background: #2c974b; }
+.toolbar-btn.danger:hover { color: #cb2431; }
+
+/* 文件列表 */
+.file-list {
+  border: 1px solid #d1d5da;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+.file-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-bottom: 1px solid #eaecef;
+  gap: 8px;
+  transition: background 0.05s;
+}
+.file-row:last-child { border-bottom: none; }
+.file-row:hover { background: #f6f8fa; }
+.file-row:hover .row-actions { opacity: 1; }
+
+.row-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+.row-name { flex: 1; font-size: 14px; color: #0366d6; min-width: 0; }
+.row-name a { color: #0366d6; text-decoration: none; }
+.row-name a:hover { color: #0366d6; text-decoration: underline; }
+.row-size { width: 90px; text-align: right; color: #586069; font-size: 12px; flex-shrink: 0; }
+.row-time { width: 140px; color: #586069; font-size: 12px; flex-shrink: 0; }
+.row-actions { opacity: 0; transition: opacity 0.1s; display: flex; gap: 4px; flex-shrink: 0; }
+.row-actions a, .row-actions button {
+  color: #586069; text-decoration: none; font-size: 12px;
+  padding: 2px 6px; border-radius: 3px; cursor: pointer;
+  border: none; background: none; font-family: inherit;
+}
+.row-actions a:hover, .row-actions button:hover { color: #24292e; background: #e1e4e8; }
+.row-actions .del:hover { color: #cb2431; background: #ffeef0; }
+
+/* 返回上级 */
+.back-row { background: #f6f8fa; }
+.back-row .row-name a { color: #0366d6; }
+
+/* 空状态 */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 60px 20px;
+  color: #586069; font-size: 14px; gap: 12px;
+  background: #f6f8fa;
+  border: 1px solid #d1d5da;
+  border-top: none;
+}
+.empty-icon { font-size: 48px; opacity: 0.3; }
+
+/* 仓库底部信息 */
+.repo-footer {
+  margin-top: 16px;
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: #586069;
+  border-top: 1px solid #eaecef;
+}
+.repo-footer span { display: flex; align-items: center; gap: 4px; }
+.visibility-badge {
+  background: #f6f8fa;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #24292e;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<script>
+// 强制每次都从服务器获取最新内容，防止浏览器回退缓存
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || performance.navigation.type === 2) {
+        location.reload(true);
+    }
+});
+</script>
+  <!-- 仓库标题 -->
+  <div class="repo-header">
+    <span style="font-size:28px;">📁</span>
+    <div>
+      <div class="repo-title">{{ repo.name }}</div>
+      {% if repo.description %}<div class="repo-desc">{{ repo.description }}</div>{% endif %}
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+      <span class="visibility-badge">{{ '🔒 私有' if not repo.is_public else '🌐 公开' }}</span>
+      <form method="POST" action="{{ url_for('repo_toggle_visibility', repo_id=repo.id) }}" style="display:inline">
+        <button type="submit" class="toolbar-btn">{{ '🌐 设为公开' if not repo.is_public else '🔒 设为私有' }}</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <div class="breadcrumb">
+      <a href="{{ url_for('repo_view', repo_id=repo.id) }}?v={{ range(1, 99999)|random }}">{{ repo.name }}</a>
+      {% if breadcrumbs %}
+        {% for crumb in breadcrumbs %}
+          <span class="sep">/</span>
+          <a href="{{ url_for('repo_view', repo_id=repo.id, subpath=crumb.path) }}?v={{ range(1, 99999)|random }}">{{ crumb.name }}</a>
+        {% endfor %}
+      {% endif %}
+      <span class="sep">/</span>
+      <span class="current">{{ files|length + dirs|length }} 项</span>
+    </div>
+    <div class="toolbar-right">
+      <a href="{{ url_for('repo_download_zip', repo_id=repo.id, subpath=subpath) }}" class="toolbar-btn">⬇️ 下载 ZIP</a>
+      {% if cu and (cu.id == repo.user_id or cu.is_admin) %}
+      <a href="{{ url_for('repo_upload', repo_id=repo.id, path=subpath) }}" class="toolbar-btn primary">📤 上传文件</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 文件列表 -->
+  <div class="file-list">
+    {% if subpath %}
+    <div class="file-row back-row">
+      <span class="row-icon">📁</span>
+      <span class="row-name">
+        <a href="{{ url_for('repo_view', repo_id=repo.id, subpath='/'.join(subpath.split('/')[:-1])) }}">..</a>
+      </span>
+      <span class="row-size"></span>
+      <span class="row-time"></span>
+      <span class="row-actions"></span>
+    </div>
+    {% endif %}
+
+    {% for d in dirs %}
+    <div class="file-row">
+      <span class="row-icon">📁</span>
+      <span class="row-name">
+        <a href="{{ url_for('repo_view', repo_id=repo.id, subpath=subpath+'/'+d if subpath else d) }}">{{ d }}/</a>
+      </span>
+      <span class="row-size">-</span>
+      <span class="row-time">-</span>
+      <div class="row-actions">
+        {% if cu and (cu.id == repo.user_id or cu.is_admin) %}
+        <form method="POST" action="{{ url_for('repo_folder_delete', repo_id=repo.id) }}" style="display:inline">
+          <input type="hidden" name="path" value="{{ subpath+'/'+d if subpath else d }}">
+          <button type="submit" class="del" onclick="return confirm('删除文件夹 {{ d }}/ 及所有内容？')">🗑️</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    {% for f in files %}
+    <div class="file-row">
+      <span class="row-icon">{{ f.icon }}</span>
+      <span class="row-name">
+        <a href="{{ url_for('repo_file_view', repo_id=repo.id, file_id=f.id) }}">{{ f.filename }}</a>
+      </span>
+      <span class="row-size">{{ f.file_size_display }}</span>
+      <span class="row-time">{{ f.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      <div class="row-actions">
+        <a href="{{ url_for('repo_file_download', repo_id=repo.id, file_id=f.id) }}" title="下载">⬇️</a>
+        {% if cu and (cu.id == repo.user_id or cu.is_admin) %}
+          {% if f.is_text %}<a href="{{ url_for('repo_file_edit', repo_id=repo.id, file_id=f.id) }}" title="编辑">✏️</a>{% endif %}
+          <button class="del" onclick="if(confirm('确定删除此文件？')){fetch('/repos/{{ repo.id }}/file/{{ f.id }}/delete',{method:'POST'}).then(r=>r.ok&&location.reload())}" title="删除">🗑️</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if not dirs and not files %}
+    <div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <div>此文件夹为空</div>
+      {% if cu and (cu.id == repo.user_id or cu.is_admin) %}
+      <a href="{{ url_for('repo_upload', repo_id=repo.id, path=subpath) }}" class="toolbar-btn primary">📤 上传文件</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 底部信息 -->
+  <div class="repo-footer">
+    <span>👤 {{ repo.owner.username }}</span>
+    <span>📁 {{ repo.file_count }} 个文件</span>
+    <span>💾 {{ repo.total_size_display }}</span>
+    <span>📅 {{ repo.created_at.strftime('%Y-%m-%d') }} 创建</span>
+  </div>
+</div>
+{% endblock %}

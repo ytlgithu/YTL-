@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}固件库 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📚 固件库</h1>
+    <div class="flex-gap">
+        <a href="{{ url_for('firmware_upload') }}" class="btn btn-primary">+ 上传固件</a>
+        {% if cu and cu.is_admin %}
+            <a href="{{ url_for('product_list') }}" class="btn">🏷️ 产品管理</a>
+        {% endif %}
+    </div>
+</div>
+
+<form method="GET" class="filter-bar">
+    <input type="text" name="q" placeholder="搜索固件名称或版本…" value="{{ kw }}">
+    {% if products %}
+    <select name="product">
+        <option value="">全部产品</option>
+        {% for p in products %}
+        <option value="{{ p.id }}" {% if product_id|int == p.id %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+    <select name="release">
+        <option value="">全部类型</option>
+        <option value="stable" {% if release=='stable' %}selected{% endif %}>稳定版</option>
+        <option value="beta" {% if release=='beta' %}selected{% endif %}>测试版</option>
+        <option value="alpha" {% if release=='alpha' %}selected{% endif %}>开发版</option>
+    </select>
+    <input type="text" name="hardware" placeholder="硬件型号" value="{{ hardware }}">
+    <button type="submit" class="btn btn-primary">🔍 搜索</button>
+    <a href="{{ url_for('firmware_list') }}" class="btn">重置</a>
+</form>
+
+{% if firmwares %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>固件名称</th>
+            <th>产品</th>
+            <th>版本</th>
+            <th>硬件型号</th>
+            <th>类型</th>
+            <th>大小</th>
+            <th>上传者</th>
+            <th>下载</th>
+            <th>日期</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fw in firmwares %}
+        <tr>
+            <td><a href="{{ url_for('firmware_detail', fw_id=fw.id) }}">{{ fw.name }}</a></td>
+            <td>{% if fw.product %}<span class="product-tag">{{ fw.product.name }}</span>{% else %}—{% endif %}</td>
+            <td><code>v{{ fw.version }}</code></td>
+            <td>{{ fw.hardware_model or '—' }}</td>
+            <td><span class="fw-badge fw-badge-{{ fw.release_type }}">{{ fw.release_type }}</span></td>
+            <td>{{ fw.file_size_display }}</td>
+            <td>{{ fw.uploader.username }}</td>
+            <td>{{ fw.download_count }}</td>
+            <td>{{ fw.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+                <a href="{{ url_for('firmware_download', fw_id=fw.id) }}" class="btn btn-sm btn-outline">⬇️</a>
+                {% if cu.id == fw.user_id or cu.is_admin %}
+                    <a href="{{ url_for('firmware_edit', fw_id=fw.id) }}" class="btn btn-sm">✏️</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">暂无固件，<a href="{{ url_for('firmware_upload') }}">上传第一个</a></div>
+{% endif %}
+{% endblock %}

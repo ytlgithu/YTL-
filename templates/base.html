@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<title>{% block title %}YTL 开发平台{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<header class="header">
+  <div class="container header-inner">
+    <a href="{{ url_for('index') }}" class="logo">⚡ YTL Dev</a>
+    <nav class="nav">
+      <a href="{{ url_for('repo_list') }}">📦 仓库</a>
+      <a href="{{ url_for('post_list') }}">📝 博客</a>
+      {% if cu %}
+        <a href="{{ url_for('repo_new') }}" class="btn-sm btn-outline">+ 新建仓库</a>
+        <a href="{{ url_for('post_new') }}" class="btn-sm btn-outline">+ 写文章</a>
+        <a href="{{ url_for('profile') }}" class="user-nav-link"><img src="{{ cu.avatar|avatar_url }}" class="avatar-img avatar-sm" style="width:32px !important;height:32px !important;" alt="头像">{{ cu.username }}</a>
+        {% if cu.is_admin %}<a href="{{ url_for('user_list') }}" class="badge-admin">用户</a><a href="{{ url_for('operation_log') }}" class="badge-admin">日志</a>{% endif %}
+        <a href="{{ url_for('logout') }}" class="btn-logout">退出</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">登录</a>
+        <a href="{{ url_for('register') }}" class="btn-sm btn-primary">注册</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<main class="container main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-box">
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <div class="container">&copy; 2026 YTL 开发平台 · Built with Flask</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

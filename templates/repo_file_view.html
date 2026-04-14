@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{{ rf.filename }} - {{ repo.name }}{% endblock %}
+{% block extra_css %}
+<!-- highlight.js VS Code Dark+ theme -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+<style>
+.repo-header {
+  margin-bottom: 16px;
+}
+.repo-header h1 a {
+  color: #24292f;
+  text-decoration: none;
+}
+.repo-header h1 a:hover {
+  color: #0969da;
+}
+
+/* 文件查看器 VS Code 风格 */
+.file-header {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px 6px 0 0;
+  padding: 12px 16px;
+  border-bottom: none;
+}
+.file-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #24292f;
+}
+.file-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: #57606a;
+  margin-bottom: 8px;
+}
+.file-meta code {
+  font-family: Consolas, Monaco, monospace;
+  background: #e8eaed;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.file-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 代码块 VS Code 风格 */
+.code-view {
+  border: 1px solid #3c3c3c;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.code-header {
+  background: #2d2d2d;
+  color: #cccccc;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-family: Consolas, monospace;
+  border-bottom: 1px solid #3c3c3c;
+}
+.code-view pre {
+  margin: 0 !important;
+  padding: 16px !important;
+  background: #1e1e1e !important;
+  border-radius: 0 !important;
+  overflow-x: auto;
+}
+.code-view pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #d4d4d4 !important;
+}
+
+/* 二进制文件 */
+.binary-view {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 40px;
+  text-align: center;
+  background: #f6f8fa;
+  margin-bottom: 20px;
+}
+
+/* 工具栏和面包屑 */
+.repo-toolbar {
+  margin-bottom: 12px;
+}
+.breadcrumb {
+  font-size: 14px;
+  color: #57606a;
+}
+.breadcrumb a {
+  color: #0969da;
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+.breadcrumb .sep {
+  margin: 0 4px;
+  color: #8c959f;
+}
+.breadcrumb .current {
+  color: #24292f;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="repo-header">
+  <h1><a href="{{ url_for('repo_view', repo_id=repo.id) }}">{{ repo.name }}</a></h1>
+</div>
+
+<div class="repo-toolbar">
+  <div class="breadcrumb">
+    <a href="{{ url_for('repo_view', repo_id=repo.id) }}">{{ repo.name }}</a>
+    {% for crumb in breadcrumbs %}
+    <span class="sep">/</span>
+    <a href="{{ url_for('repo_view', repo_id=repo.id, subpath=crumb.path) }}">{{ crumb.name }}</a>
+    {% endfor %}
+    <span class="sep">/</span>
+    <span class="current">{{ rf.filename }}</span>
+  </div>
+</div>
+
+<div class="file-header">
+  <h2>{{ rf.filename }}</h2>
+  <div class="file-meta">
+    <span>大小: {{ rf.file_size_display }}</span>
+    <span>MD5: <code>{{ rf.md5_hash or 'N/A' }}</code></span>
+    <span>更新: {{ rf.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    {% if rf.uploader %}<span>上传者: {{ rf.uploader.username }}</span>{% endif %}
+  </div>
+  <div class="file-actions">
+    <a href="{{ url_for('repo_file_download', repo_id=repo.id, file_id=rf.id) }}" class="btn btn-primary">下载</a>
+    {% if cu and (cu.id == repo.user_id or cu.is_admin) %}
+      {% if rf.is_text %}
+      <a href="{{ url_for('repo_file_edit', repo_id=repo.id, file_id=rf.id) }}" class="btn btn-outline">编辑</a>
+      {% endif %}
+      <form method="POST" action="{{ url_for('repo_file_delete', repo_id=repo.id, file_id=rf.id) }}" onsubmit="return confirm('删除此文件？')" style="display:inline">
+        <button type="submit" class="btn btn-danger">删除</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if rf.is_text and content %}
+<div class="code-view">
+  <div class="code-header">{{ rf.filename }}</div>
+  <pre><code id="codeBlock" class="language-{{ rf.lang }}">{{ content | e }}</code></pre>
+</div>
+{% elif rf.ext|lower in ['pdf'] %}
+<div class="pdf-viewer">
+  <embed src="{{ url_for('repo_file_preview', repo_id=repo.id, file_id=rf.id) }}" type="application/pdf" width="100%" height="700px">
+</div>
+{% else %}
+<div class="binary-view">
+  <p>这是一个二进制文件，无法直接预览。</p>
+  <p><a href="{{ url_for('repo_file_download', repo_id=repo.id, file_id=rf.id) }}" class="btn btn-primary">点击下载</a></p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if rf.is_text and content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+// 自动检测语言并高亮
+document.addEventListener('DOMContentLoaded', function() {
+  const codeBlock = document.getElementById('codeBlock');
+  if (codeBlock) {
+    hljs.highlightElement(codeBlock);
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

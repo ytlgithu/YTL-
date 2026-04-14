@@ -1,0 +1,5 @@
+F:/AiUlBuilder/LVGL/1152x576_fan_img/build/CMakeFiles/edit_cache.dir
+F:/AiUlBuilder/LVGL/1152x576_fan_img/build/CMakeFiles/rebuild_cache.dir
+F:/AiUlBuilder/LVGL/1152x576_fan_img/build/simulator/CMakeFiles/main.dir
+F:/AiUlBuilder/LVGL/1152x576_fan_img/build/simulator/CMakeFiles/edit_cache.dir
+F:/AiUlBuilder/LVGL/1152x576_fan_img/build/simulator/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+{% block title %}编辑 {{ rf.filename }} - {{ repo.name }}{% endblock %}
+{% block extra_css %}
+<!-- Monaco Editor VS Code Dark+ theme -->
+<style>
+/* ================================================
+   VS Code 风格编辑器 - 整体布局
+   ================================================ */
+.page-header {
+  margin-bottom: 16px;
+}
+.page-header h1 {
+  font-size: 22px;
+  color: #24292f;
+  margin-bottom: 4px;
+}
+
+.shortcut-hint {
+  font-size: 12px;
+  color: #57606a;
+  margin-bottom: 0;
+}
+.breadcrumb-edit {
+  font-size: 13px;
+  color: #57606a;
+  margin-bottom: 10px;
+  padding: 6px 12px;
+  background: #f6f8fa;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.breadcrumb-edit a {
+  color: #0969da;
+  text-decoration: none;
+}
+.breadcrumb-edit a:hover {
+  text-decoration: underline;
+}
+.breadcrumb-edit .sep {
+  margin: 0 3px;
+  color: #8c959f;
+}
+.breadcrumb-edit .current {
+  color: #24292f;
+}
+
+.shortcut-hint kbd {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-bottom: 2px solid #d0d7de;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: inherit;
+  font-size: 11px;
+  color: #57606a;
+}
+
+.vscode-editor {
+  border: 1px solid #3c3c3c;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  margin-bottom: 16px;
+}
+
+/* ================================================
+   标题栏
+   ================================================ */
+.vscode-titlebar {
+  background: #323233;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-bottom: 1px solid #3c3c3c;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.titlebar-filename {
+  font-size: 13px;
+  color: #cccccc;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titlebar-repo {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-right: 12px;
+}
+
+.titlebar-actions {
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  height: 35px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: #8c8c8c;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-family: inherit;
+}
+.titlebar-btn:hover {
+  background: #4a4a4a;
+  color: #fff;
+}
+.titlebar-btn.save-btn {
+  color: #4fc3f7;
+}
+.titlebar-btn.save-btn:hover {
+  background: #094771;
+}
+.titlebar-btn .dirty-dot {
+  width: 8px;
+  height: 8px;
+  background: #007acc;
+  border-radius: 50%;
+  display: none;
+}
+
+/* ================================================
+   标签栏
+   ================================================ */
+.vscode-tabs {
+  background: #2d2d2d;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+.vscode-tab {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: #2d2d2d;
+  border-right: 1px solid #3c3c3c;
+  color: #969696;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  gap: 6px;
+  transition: all 0.1s;
+  user-select: none;
+}
+.vscode-tab.active {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-top: 2px solid #007acc;
+  padding-top: 4px;
+}
+.vscode-tab .tab-icon {
+  font-size: 12px;
+}
+.vscode-tab .tab-close {
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.5;
+  padding: 2px;
+  border-radius: 3px;
+}
+.vscode-tab .tab-close:hover {
+  opacity: 1;
+  background: #4a4a4a;
+}
+
+/* ================================================
+   Monaco 编辑器容器
+   ================================================ */
+.monaco-container {
+  width: 100%;
+  height: 600px;
+  position: relative;
+}
+
+/* ================================================
+   底部状态栏
+   ================================================ */
+.vscode-statusbar {
+  background: #007acc;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 12px;
+  color: white;
+  gap: 0;
+  user-select: none;
+}
+
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 22px;
+  cursor: default;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.statusbar-item:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.statusbar-right {
+  margin-left: auto;
+  display: flex;
+}
+
+.statusbar-lang {
+  background: #004f7a;
+  padding: 0 10px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.statusbar-cursor {
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 11px;
+  padding: 0 10px;
+}
+
+/* ================================================
+   底部操作按钮
+   ================================================ */
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-vsc-save {
+  background: #0e639c;
+  color: white;
+  border: 1px solid #0e639c;
+  padding: 8px 24px;
+  border-radius: 2px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-vsc-save:hover {
+  background: #1177bb;
+}
+
+.btn-vsc-cancel {
+  background: transparent;
+  color: #57606a;
+  border: 1px solid #d0d7de;
+  padding: 8px 16px;
+  border-radius: 2px;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn-vsc-cancel:hover {
+  background: #f6f8fa;
+  color: #24292f;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>✏️ 编辑文件</h1>
+  <div class="breadcrumb-edit">
+    <a href="{{ url_for('repo_view', repo_id=repo.id) }}">{{ repo.name }}</a>
+    <span class="sep">/</span>
+    <span class="current">{{ rf.filename }}</span>
+  </div>
+  <p class="shortcut-hint">
+    <kbd>Ctrl</kbd>+<kbd>S</kbd> 保存 &nbsp;|&nbsp;
+    <kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销 &nbsp;|&nbsp;
+    <kbd>Ctrl</kbd>+<kbd>F</kbd> 搜索 &nbsp;|&nbsp;
+    <kbd>Tab</kbd> 缩进
+  </p>
+</div>
+
+<form method="POST" id="editorForm">
+  <!-- 隐藏域存储编辑器内容，提交时填充 -->
+  <input type="hidden" name="content" id="hiddenContent">
+
+  <div class="vscode-editor">
+    <!-- 标题栏 -->
+    <div class="vscode-titlebar">
+      <span class="titlebar-filename">{{ rf.filename }}</span>
+      <span class="titlebar-repo">{{ repo.name }}</span>
+      <div class="titlebar-actions">
+        <button type="submit" class="titlebar-btn save-btn" title="保存 (Ctrl+S)">
+          <span class="dirty-dot" id="dirtyDot"></span>
+          💾 保存
+        </button>
+      </div>
+    </div>
+
+    <!-- 标签栏 -->
+    <div class="vscode-tabs">
+      <div class="vscode-tab active">
+        <span class="tab-icon">📄</span>
+        <span>{{ rf.filename }}</span>
+        <span class="tab-close" onclick="window.history.back()">×</span>
+      </div>
+    </div>
+
+    <!-- Monaco 编辑器 -->
+    <div class="monaco-container" id="monacoContainer"></div>
+
+    <!-- 状态栏 -->
+    <div class="vscode-statusbar">
+      <div class="statusbar-item" id="statusBranch">✅ 已同步</div>
+      <div class="statusbar-item" id="statusEncoding">UTF-8</div>
+      <div class="statusbar-item statusbar-lang" id="statusLang">{{ rf.lang|upper if rf.lang else 'PLAINTEXT' }}</div>
+      <div class="statusbar-right">
+        <div class="statusbar-item statusbar-cursor" id="statusCursor">Ln 1, Col 1</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn-vsc-save">💾 保存文件</button>
+    <a href="{{ url_for('repo_file_view', repo_id=repo.id, file_id=rf.id) }}" class="btn-vsc-cancel">取消</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Monaco Editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script>
+(function() {
+  // 获取语言
+  var langMap = {
+    'c': 'c', 'h': 'c', 'cpp': 'cpp', 'hpp': 'cpp',
+    'py': 'python', 'js': 'javascript', 'ts': 'typescript',
+    'html': 'html', 'css': 'css', 'json': 'json',
+    'md': 'markdown', 'xml': 'xml', 'yaml': 'yaml', 'yml': 'yaml',
+    'sh': 'shell', 'bat': 'bat', 'ps1': 'powershell',
+    'sql': 'sql', 'lua': 'lua', 'rs': 'rust', 'go': 'go',
+    'java': 'java', 'php': 'php', 'rb': 'ruby',
+    'txt': 'plaintext', 'bin': 'binary', 'hex': 'binary',
+    'elf': 'binary', 'fw': 'binary', 'img': 'binary',
+    'png': 'image', 'jpg': 'image', 'jpeg': 'image',
+    'gif': 'image', 'webp': 'image', 'bmp': 'image',
+    'pdf': 'pdf', 'zip': 'zip', 'rar': 'zip',
+    'tar': 'tar', 'gz': 'gzip'
+  };
+  var ext = '{{ rf.lang | lower if rf.lang else "txt" }}';
+  var monacoLang = langMap[ext] || 'plaintext';
+
+  require.config({
+    paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }
+  });
+
+  require(['vs/editor/editor.main'], function() {
+    // 注册二进制文件提示
+    if (monacoLang === 'binary') {
+      monaco.editor.setTheme('vs-dark');
+      var editor = monaco.editor.create(document.getElementById('monacoContainer'), {
+        value: '/* 二进制文件，无法在编辑器中预览 */\n/* 请下载文件查看 */',
+        language: 'plaintext',
+        readOnly: true,
+        theme: 'vs-dark',
+        fontSize: 14,
+        fontFamily: "'JetBrains Mono', Consolas, monospace",
+        minimap: { enabled: false },
+        lineNumbers: 'off',
+        scrollBeyondLastLine: false,
+        renderLineHighlight: 'none',
+        wordWrap: 'on'
+      });
+      document.getElementById('statusLang').textContent = 'BINARY';
+      return;
+    }
+
+    // 创建编辑器
+    var originalContent = {{ content | tojson }};
+    var editor = monaco.editor.create(document.getElementById('monacoContainer'), {
+      value: originalContent,
+      language: monacoLang,
+      theme: 'vs-dark',
+      fontSize: 14,
+      fontFamily: "'JetBrains Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
+      fontLigatures: true,
+      lineHeight: 22,
+      minimap: { enabled: true, scale: 1 },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      wordWrap: 'on',
+      tabSize: 4,
+      insertSpaces: true,
+      renderWhitespace: 'selection',
+      renderLineHighlight: 'line',
+      smoothScrolling: true,
+      cursorBlinking: 'smooth',
+      cursorSmoothCaretAnimation: 'on',
+      padding: { top: 16, bottom: 16 },
+      bracketPairColorization: { enabled: true },
+      guides: { bracketPairs: true, indentation: true },
+      suggest: { showWords: true },
+      formatOnPaste: true,
+      formatOnType: true,
+      scrollbar: {
+        verticalScrollbarSize: 10,
+        horizontalScrollbarSize: 10
+      }
+    });
+
+    // 光标位置变化 → 更新状态栏
+    editor.onDidChangeCursorPosition(function(e) {
+      document.getElementById('statusCursor').textContent =
+        'Ln ' + e.position.lineNumber + ', Col ' + e.position.column;
+    });
+
+    // 内容变化 → 标记未保存
+    var isDirty = false;
+    editor.onDidChangeModelContent(function() {
+      if (!isDirty) {
+        isDirty = true;
+        document.getElementById('dirtyDot').style.display = 'inline-block';
+      }
+    });
+
+    // Ctrl+S → 提交表单
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+      function() {
+        document.getElementById('hiddenContent').value = editor.getValue();
+        document.getElementById('editorForm').submit();
+      }
+    );
+
+    // 标签保存按钮
+    document.querySelector('.titlebar-btn.save-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('hiddenContent').value = editor.getValue();
+      document.getElementById('editorForm').submit();
+    });
+
+    // 表单提交时确保内容同步
+    document.getElementById('editorForm').addEventListener('submit', function() {
+      document.getElementById('hiddenContent').value = editor.getValue();
+    });
+
+    // 失焦时自动保存内容到 hidden（防止刷新丢失）
+    window.addEventListener('beforeunload', function() {
+      document.getElementById('hiddenContent').value = editor.getValue();
+    });
+  });
+})();
+</script>
+{% endblock %}

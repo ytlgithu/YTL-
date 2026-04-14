@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}个人中心{% endblock %}
+{% block content %}
+<div class="profile-header">
+  <div class="avatar-section">
+    <img src="{{ user.avatar|avatar_url }}" class="avatar-img avatar-xl" style="width:80px !important;height:80px !important;" alt="头像">
+    <form action="{{ url_for('avatar_upload') }}" method="POST" enctype="multipart/form-data" class="avatar-form">
+      <label class="btn btn-sm btn-outline avatar-btn">
+        上传头像<input type="file" name="avatar" accept=".png,.jpg,.jpeg,.gif,.webp" style="display:none" onchange="this.form.submit()">
+      </label>
+      <p class="avatar-tip">支持 png/jpg/gif/webp，建议正方形图片</p>
+    </form>
+  </div>
+  <div class="profile-info">
+    <h1>{{ user.username }}</h1>
+    <p>{{ user.email }}</p>
+    <p class="meta">注册于 {{ user.created_at.strftime('%Y-%m-%d') }}</p>
+    <p class="meta">最后登录 {{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '暂无记录' }}</p>
+  </div>
+</div>
+
+<div class="profile-grid">
+  <section>
+    <h2>📦 我的仓库 ({{ repos|length }})</h2>
+    {% if repos %}
+    <ul class="repo-list">
+      {% for r in repos %}
+      <li>
+        <a href="{{ url_for('repo_view', repo_id=r.id) }}">{{ r.name }}</a>
+        <span>{{ '🌐' if r.is_public else '🔒' }}</span>
+        <span class="meta">{{ r.file_count }} 文件 · {{ r.total_size_display }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">暂无仓库</p>
+    {% endif %}
+    <a href="{{ url_for('repo_new') }}" class="btn btn-sm btn-outline">+ 新建仓库</a>
+  </section>
+
+  <section>
+    <h2>📝 我的文章 ({{ posts|length }})</h2>
+    {% if posts %}
+    <ul class="post-list">
+      {% for p in posts %}
+      <li>
+        <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
+        <span>{{ '🌐' if p.is_public else '🔒' }}</span>
+        <span class="meta">{{ p.created_at.strftime('%Y-%m-%d') }} · {{ p.view_count }} 阅读</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">暂无文章</p>
+    {% endif %}
+    <a href="{{ url_for('post_new') }}" class="btn btn-sm btn-outline">+ 写文章</a>
+  </section>
+</div>
+{% endblock %}

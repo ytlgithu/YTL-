@@ -1,0 +1,1 @@
+ -lSDL2 F:/AiUlBuilder/LVGL/test_view/simulator/ffmpeg/lib/libavcodec.dll.a F:/AiUlBuilder/LVGL/test_view/simulator/ffmpeg/lib/libavformat.dll.a F:/AiUlBuilder/LVGL/test_view/simulator/ffmpeg/lib/libavutil.dll.a F:/AiUlBuilder/LVGL/test_view/simulator/ffmpeg/lib/libswscale.dll.a -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

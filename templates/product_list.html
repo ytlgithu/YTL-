@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}产品管理 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>产品管理</h1>
+</div>
+
+<div class="detail-grid" style="grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: start;">
+    <div class="detail-card">
+        <h3>+ 添加产品</h3>
+        <form method="POST" action="{{ url_for('product_add') }}">
+            <div class="form-group">
+                <label for="name">产品名称 *</label>
+                <input type="text" id="name" name="name" placeholder="如：ESP32 主控板" required>
+            </div>
+            <div class="form-group">
+                <label for="description">描述</label>
+                <textarea id="description" name="description" rows="3" placeholder="产品简介…"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">添加产品</button>
+        </form>
+    </div>
+
+    <div class="detail-card">
+        <h3>产品列表 ({{ products|length }})</h3>
+        {% if products %}
+        <table class="data-table">
+            <thead>
+                <tr><th>产品名称</th><th>描述</th><th>固件数</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.description or '—' }}</td>
+                    <td>{{ p.firmwares.count() }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('product_delete', p_id=p.id) }}" onsubmit="return confirm('确定删除？');" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:var(--gray-500);padding:1rem 0;">暂无产品，先添加一个吧</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

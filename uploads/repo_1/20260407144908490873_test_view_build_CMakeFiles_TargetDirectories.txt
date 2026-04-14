@@ -1,0 +1,5 @@
+F:/AiUlBuilder/LVGL/test_view/build/CMakeFiles/edit_cache.dir
+F:/AiUlBuilder/LVGL/test_view/build/CMakeFiles/rebuild_cache.dir
+F:/AiUlBuilder/LVGL/test_view/build/simulator/CMakeFiles/main.dir
+F:/AiUlBuilder/LVGL/test_view/build/simulator/CMakeFiles/edit_cache.dir
+F:/AiUlBuilder/LVGL/test_view/build/simulator/CMakeFiles/rebuild_cache.dir

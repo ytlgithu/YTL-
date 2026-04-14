@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}上传固件 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📤 上传固件</h1>
+</div>
+
+<form method="POST" enctype="multipart/form-data" class="form-card">
+    <div class="form-group">
+        <label for="name">固件名称 *</label>
+        <input type="text" id="name" name="name" placeholder="如：ESP32 主控固件" required>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="version">版本号 *</label>
+            <input type="text" id="version" name="version" placeholder="如：1.2.3" required>
+        </div>
+        <div class="form-group">
+            <label for="release_type">发布类型</label>
+            <select id="release_type" name="release_type">
+                <option value="stable">稳定版 Stable</option>
+                <option value="beta">测试版 Beta</option>
+                <option value="alpha">开发版 Alpha</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="product_id">所属产品</label>
+            <select id="product_id" name="product_id">
+                <option value="">— 未分类 —</option>
+                {% for p in products %}
+                <option value="{{ p.id }}">{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="hardware_model">硬件型号</label>
+            <input type="text" id="hardware_model" name="hardware_model" placeholder="如：ESP32-WROOM-32">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="description">描述</label>
+        <textarea id="description" name="description" rows="4" placeholder="固件功能说明、更新日志…"></textarea>
+    </div>
+    <div class="form-group upload-group">
+        <label for="file">选择固件文件 *</label>
+        <div class="file-input-wrapper">
+            <input type="file" id="file" name="file" accept=".hex,.bin,.elf,.fw,.zip,.img" required>
+            <p class="file-hint">支持格式：hex / bin / elf / fw / zip / img，单文件最大 500MB</p>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">🚀 上传固件</button>
+        <a href="{{ url_for('firmware_list') }}" class="btn btn-outline">取消</a>
+    </div>
+</form>
+{% endblock %}

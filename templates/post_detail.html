@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block content %}
+<div class="post-layout">
+  <!-- 左侧目录 -->
+  <nav class="post-toc" id="postToc">
+    <div class="toc-header">📑 目录</div>
+    <div class="toc-content" id="tocContent"></div>
+  </nav>
+  
+  <!-- 文章内容 -->
+  <article class="post-detail">
+    <header class="post-header">
+      <h1>{{ post.title }} <span class="visibility-badge">{{ '🌐 公开' if post.is_public else '🔒 私有' }}</span></h1>
+      <div class="meta">
+        <span>👤 {{ post.author.username }}</span>
+        <span>🕐 {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span>👁️ {{ post.view_count }} 次阅读</span>
+        {% if post.updated_at != post.created_at %}
+        <span>✏️ 编辑于 {{ post.updated_at.strftime('%Y-%m-%d') }}</span>
+        {% endif %}
+      </div>
+      {% if cu and (cu.id == post.user_id or cu.is_admin) %}
+      <div class="actions">
+        <a href="{{ url_for('post_edit', post_id=post.id) }}" class="btn btn-sm btn-outline">编辑</a>
+        <form method="POST" action="{{ url_for('post_toggle_visibility', post_id=post.id) }}" style="display:inline">
+          <button type="submit" class="btn btn-sm btn-outline">{{ '🔒 设为私有' if post.is_public else '🌐 设为公开' }}</button>
+        </form>
+        <form method="POST" action="{{ url_for('post_delete', post_id=post.id) }}" onsubmit="return confirm('删除此文章？')" style="display:inline">
+          <button type="submit" class="btn btn-sm btn-danger">删除</button>
+        </form>
+      </div>
+      {% endif %}
+    </header>
+
+    <div class="post-content" data-raw="{{ post.content | e }}">
+    </div>
+  </article>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<!-- highlight.js VS Code Dark+ theme -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
+
+<style>
+/* 文章布局 */
+.post-layout {
+  display: flex;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* 左侧目录 */
+.post-toc {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 70px;  /* header 高度约 50px + 20px 间距 */
+  height: fit-content;
+  max-height: calc(100vh - 100px);  /* 减去 header + 上间距 + 底部余量 */
+  overflow-y: auto;
+  background: #f8f9fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 12px;
+  padding-bottom: 20px;  /* 底部多留空间 */
+  font-size: 13px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.toc-header {
+  font-weight: 600;
+  font-size: 14px;
+  color: #24292e;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.toc-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toc-content a {
+  color: #586069;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-all;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.toc-content a:hover {
+  background: #e1e4e8;
+  color: #0366d6;
+}
+
+.toc-content a.active {
+  background: #d1e4ff;
+  color: #0366d6;
+  border-left-color: #0366d6;
+}
+
+/* H1 - 可折叠的分组标题 */
+.toc-content .toc-group {
+  margin-bottom: 4px;
+}
+
+.toc-content .toc-h1 {
+  font-weight: 600;
+  font-size: 14px;
+  color: #24292e;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.toc-content .toc-h1::before {
+  content: '▼';
+  font-size: 10px;
+  margin-right: 6px;
+  transition: transform 0.2s;
+  color: #6a737d;
+}
+
+.toc-content .toc-h1.collapsed::before {
+  transform: rotate(-90deg);
+}
+
+.toc-content .toc-children {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.toc-content .toc-children.collapsed {
+  max-height: 0 !important;
+}
+
+/* H2 - 正常大小，略缩进 */
+.toc-content a.toc-h2 {
+  padding-left: 12px;
+  font-size: 13px;
+  color: #24292e;
+}
+
+/* H3 - 更小，更多缩进 */
+.toc-content a.toc-h3 {
+  padding-left: 24px;
+  font-size: 12px;
+  color: #586069;
+}
+
+/* H4 - 更小 */
+.toc-content a.toc-h4 {
+  padding-left: 36px;
+  font-size: 11px;
+  color: #6a737d;
+}
+
+/* H5/H6 - 最小最淡 */
+.toc-content a.toc-h5,
+.toc-content a.toc-h6 {
+  padding-left: 48px;
+  font-size: 11px;
+  color: #8c959f;
+}
+
+/* 无目录时隐藏 */
+.post-toc.hidden {
+  display: none;
+}
+
+/* 文章内容区 */
+.post-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-content {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* 代码块样式 - VS Code 风格 */
+.post-content pre {
+  background: #1e1e1e !important;
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid #333;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.post-content pre code.hljs {
+  background: transparent !important;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, 'Courier New', monospace;
+}
+
+/* 行内代码 */
+.post-content code:not(pre code) {
+  font-family: Consolas, Monaco, monospace;
+  background: #f0f0f0;
+  color: #c7254e;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* 引用块 */
+.post-content blockquote {
+  border-left: 4px solid #3ea6ff;
+  margin: 16px 0;
+  padding: 8px 16px;
+  background: #f0f7ff;
+  color: #333;
+  border-radius: 0 4px 4px 0;
+}
+
+/* 表格 */
+.post-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.post-content th {
+  background: #2d2d2d;
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+}
+.post-content td {
+  padding: 8px 14px;
+  border-bottom: 1px solid #eee;
+}
+.post-content tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* 标题样式 */
+.post-content h1, .post-content h2, .post-content h3,
+.post-content h4, .post-content h5, .post-content h6 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  scroll-margin-top: 70px;  /* header 高度 + 间距，确保跳转时不被遮挡 */
+}
+.post-content h1 { font-size: 1.8em; }
+.post-content h2 { font-size: 1.5em; }
+.post-content h3 { font-size: 1.25em; }
+
+/* 图片 */
+.post-content img {
+  max-width: 100%;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 链接 */
+.post-content a {
+  color: #3ea6ff;
+  text-decoration: none;
+}
+.post-content a:hover {
+  text-decoration: underline;
+}
+
+/* 水平线 */
+.post-content hr {
+  border: none;
+  border-top: 2px solid #eee;
+  margin: 24px 0;
+}
+
+/* 响应式：小屏幕隐藏目录 */
+@media (max-width: 900px) {
+  .post-toc {
+    display: none;
+  }
+  .post-detail {
+    max-width: 100%;
+  }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+// 配置 marked 使用 highlight.js
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  },
+  breaks: true,
+  gfm: true
+});
+
+const el = document.querySelector('.post-content');
+if (el && el.dataset.raw) {
+  el.innerHTML = marked.parse(el.dataset.raw);
+  
+  // 渲染完成后再次触发 highlight
+  el.querySelectorAll('pre code').forEach((block) => {
+    hljs.highlightElement(block);
+  });
+  
+  // 生成目录
+  generateTOC();
+}
+
+// 生成目录
+function generateTOC() {
+  const headings = el.querySelectorAll('h1, h2, h3, h4, h5, h6');
+  const tocContent = document.getElementById('tocContent');
+  const tocNav = document.getElementById('postToc');
+  
+  if (headings.length === 0) {
+    tocNav.classList.add('hidden');
+    return;
+  }
+  
+  // 构建目录树结构
+  const tocTree = [];
+  let currentGroup = null;
+  
+  headings.forEach((heading, index) => {
+    const level = heading.tagName.toLowerCase();
+    const text = heading.textContent.trim();
+    const id = 'heading-' + index;
+    
+    // 给标题添加 id
+    heading.id = id;
+    
+    const item = { level, text, id, children: [] };
+    
+    if (level === 'h1') {
+      // H1 开始新分组
+      currentGroup = item;
+      tocTree.push(currentGroup);
+    } else if (currentGroup) {
+      // 子标题加入当前分组
+      currentGroup.children.push(item);
+    } else {
+      // 没有 H1 时的独立项
+      tocTree.push(item);
+    }
+  });
+  
+  // 渲染目录
+  let tocHTML = '';
+  tocTree.forEach(group => {
+    if (group.level === 'h1' && group.children.length > 0) {
+      // 有子项的 H1，可折叠
+      tocHTML += `<div class="toc-group">`;
+      tocHTML += `<a href="#${group.id}" class="toc-h1" data-target="${group.id}">${group.text}</a>`;
+      tocHTML += `<div class="toc-children">`;
+      group.children.forEach(child => {
+        tocHTML += `<a href="#${child.id}" class="toc-${child.level}" data-target="${child.id}">${child.text}</a>`;
+      });
+      tocHTML += `</div></div>`;
+    } else {
+      // 没有 H1 或没有子项
+      tocHTML += `<a href="#${group.id}" class="toc-${group.level}" data-target="${group.id}">${group.text}</a>`;
+    }
+  });
+  
+  tocContent.innerHTML = tocHTML;
+  
+  // 绑定折叠事件
+  tocContent.querySelectorAll('.toc-h1').forEach(h1 => {
+    h1.addEventListener('click', function(e) {
+      if (e.offsetX < 20) { // 点击箭头区域
+        e.preventDefault();
+        e.stopPropagation();
+        const children = this.nextElementSibling;
+        if (children && children.classList.contains('toc-children')) {
+          children.classList.toggle('collapsed');
+          this.classList.toggle('collapsed');
+        }
+        return;
+      }
+    });
+  });
+  
+  // 点击目录项滚动
+  tocContent.querySelectorAll('a[data-target]').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('data-target');
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth' });
+        // 更新 active 状态
+        tocContent.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
+      }
+    });
+  });
+  
+  // 滚动时更新目录高亮
+  let ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      window.requestAnimationFrame(function() {
+        updateActiveTOC(headings, tocContent);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+}
+
+// 更新目录高亮
+function updateActiveTOC(headings, tocContent) {
+  const headerHeight = 80;  // header 高度 + 间距
+  const scrollPos = window.scrollY + headerHeight;
+  const windowHeight = window.innerHeight;
+  const docHeight = document.documentElement.scrollHeight;
+  
+  // 检查是否滚动到接近底部（距离底部 100px 以内）
+  const isNearBottom = (window.scrollY + windowHeight) >= (docHeight - 100);
+  
+  let activeId = null;
+  
+  if (isNearBottom) {
+    // 接近底部时，选中最后一个标题
+    activeId = headings[headings.length - 1].id;
+  } else {
+    // 正常情况：找当前视口内最靠上的标题
+    // 如果有标题在视口内（顶部在视口范围内），选中第一个在视口内的
+    // 否则选最后一个在视口上方的
+    
+    let firstInView = null;
+    let lastAbove = null;
+    
+    headings.forEach(heading => {
+      const top = heading.offsetTop;
+      const bottom = top + heading.offsetHeight;
+      
+      // 标题顶部在视口顶部之下
+      if (top >= scrollPos) {
+        if (!firstInView) {
+          firstInView = heading.id;
+        }
+      }
+      // 标题在视口上方或刚好接触视口顶部
+      if (top <= scrollPos) {
+        lastAbove = heading.id;
+      }
+    });
+    
+    // 优先选视口内第一个
+    activeId = firstInView || lastAbove;
+  }
+  
+  if (activeId) {
+    tocContent.querySelectorAll('a').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('data-target') === activeId);
+    });
+  }
+}
+</script>
+{% endblock %}

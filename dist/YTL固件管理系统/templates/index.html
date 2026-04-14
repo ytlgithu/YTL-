@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}首页 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="hero">
+    <h1>⚡ YTL 固件管理系统</h1>
+    <p>安全、高效地管理您的固件资产</p>
+    {% if not cu %}
+        <div class="hero-actions">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">立即注册</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline btn-lg">已有账号？登录</a>
+        </div>
+    {% else %}
+        <div class="hero-actions">
+            <a href="{{ url_for('firmware_list') }}" class="btn btn-primary btn-lg">浏览固件库</a>
+            <a href="{{ url_for('firmware_upload') }}" class="btn btn-outline btn-lg">上传固件</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="stats-bar">
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.firmware_count or 0 }}</span>
+        <span class="stat-label">固件总数</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.user_count or 0 }}</span>
+        <span class="stat-label">注册用户</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.total_downloads or 0 }}</span>
+        <span class="stat-label">总下载次数</span>
+    </div>
+</div>
+
+{% if firmwares %}
+<h2 class="section-title">📦 最新固件</h2>
+<div class="firmware-grid">
+    {% for fw in firmwares %}
+    <a href="{{ url_for('firmware_detail', fw_id=fw.id) }}" class="fw-card">
+        <div class="fw-card-header">
+            <span class="fw-name">{{ fw.name }}</span>
+            <span class="fw-badge fw-badge-{{ fw.release_type }}">{{ fw.release_type }}</span>
+        </div>
+        <div class="fw-version">v{{ fw.version }}</div>
+        {% if fw.hardware_model %}<div class="fw-hardware">📟 {{ fw.hardware_model }}</div>{% endif %}
+        <div class="fw-meta">
+            <span>👤 {{ fw.uploader.username }}</span>
+            <span>📅 {{ fw.created_at.strftime('%Y-%m-%d') }}</span>
+            <span>⬇️ {{ fw.download_count }}</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

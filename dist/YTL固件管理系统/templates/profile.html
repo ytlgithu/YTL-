@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}个人中心 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>👤 个人中心</h1>
+</div>
+
+<div class="detail-grid">
+    <div class="detail-card info-card">
+        <h3>👤 账户信息</h3>
+        <table class="info-table">
+            <tr><td>用户名</td><td>{{ user.username }}</td></tr>
+            <tr><td>邮箱</td><td>{{ user.email }}</td></tr>
+            <tr><td>角色</td><td>{% if user.is_admin %}🛡️ 管理员{% else %}普通用户{% endif %}</td></tr>
+            <tr><td>注册时间</td><td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+            <tr><td>最后登录</td><td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '从未' }}</td></tr>
+        </table>
+    </div>
+</div>
+
+<h2 class="section-title">📤 我上传的固件</h2>
+{% if firmwares %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>名称</th><th>版本</th><th>类型</th><th>下载</th><th>日期</th><th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fw in firmwares %}
+        <tr>
+            <td><a href="{{ url_for('firmware_detail', fw_id=fw.id) }}">{{ fw.name }}</a></td>
+            <td><code>v{{ fw.version }}</code></td>
+            <td><span class="fw-badge fw-badge-{{ fw.release_type }}">{{ fw.release_type }}</span></td>
+            <td>{{ fw.download_count }}</td>
+            <td>{{ fw.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+                <a href="{{ url_for('firmware_download', fw_id=fw.id) }}" class="btn btn-sm btn-outline">⬇️</a>
+                <a href="{{ url_for('firmware_edit', fw_id=fw.id) }}" class="btn btn-sm">✏️</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">你还没有上传任何固件，<a href="{{ url_for('firmware_upload') }}">去上传</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,3 @@
+D:\unkx\cmake-4.0.1-windows-x86_64\bin\cmake.exe -E rm -f CMakeFiles\main.dir/objects.a
+"D:\Program Files (x86)\AiUIBuilder\tool\mingw\bin\ar.exe" qc CMakeFiles\main.dir/objects.a @CMakeFiles\main.dir\objects1.rsp
+"D:\Program Files (x86)\AiUIBuilder\tool\mingw\bin\gcc.exe" -g -Wl,--whole-archive CMakeFiles\main.dir/objects.a -Wl,--no-whole-archive -o ..\main.exe -Wl,--out-implib,F:\AiUlBuilder\LVGL\1152x576_fan_img\simulator\build\libmain.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\main.dir\linkLibs.rsp

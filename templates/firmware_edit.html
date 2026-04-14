@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}编辑固件 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>✏️ 编辑固件</h1>
+</div>
+
+<form method="POST" class="form-card">
+    <div class="form-group">
+        <label for="name">固件名称 *</label>
+        <input type="text" id="name" name="name" value="{{ fw.name }}" required>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="version">版本号 *</label>
+            <input type="text" id="version" name="version" value="{{ fw.version }}" required>
+        </div>
+        <div class="form-group">
+            <label for="release_type">发布类型</label>
+            <select id="release_type" name="release_type">
+                <option value="stable" {% if fw.release_type=='stable' %}selected{% endif %}>稳定版</option>
+                <option value="beta" {% if fw.release_type=='beta' %}selected{% endif %}>测试版</option>
+                <option value="alpha" {% if fw.release_type=='alpha' %}selected{% endif %}>开发版</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="product_id">所属产品</label>
+            <select id="product_id" name="product_id">
+                <option value="">— 未分类 —</option>
+                {% for p in products %}
+                <option value="{{ p.id }}" {% if fw.product_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="hardware_model">硬件型号</label>
+            <input type="text" id="hardware_model" name="hardware_model" value="{{ fw.hardware_model or '' }}">
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="description">描述</label>
+        <textarea id="description" name="description" rows="4">{{ fw.description or '' }}</textarea>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">💾 保存修改</button>
+        <a href="{{ url_for('firmware_detail', fw_id=fw.id) }}" class="btn btn-outline">取消</a>
+    </div>
+</form>
+{% endblock %}

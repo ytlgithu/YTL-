@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}新建仓库{% endblock %}
+{% block content %}
+<div class="page-header"><h1>📦 新建仓库</h1></div>
+
+<form method="POST" class="form-card">
+  <div class="form-group">
+    <label>仓库名称 *</label>
+    <input type="text" name="name" required placeholder="如：my-firmware">
+  </div>
+  <div class="form-group">
+    <label>描述</label>
+    <textarea name="description" rows="3" placeholder="仓库简介..."></textarea>
+  </div>
+  <div class="form-group">
+    <label>可见性</label>
+    <div class="radio-group">
+      <label><input type="radio" name="is_public" value="1" checked> 公开（所有人可见）</label>
+      <label><input type="radio" name="is_public" value="0"> 私有（仅自己可见）</label>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">创建仓库</button>
+    <a href="{{ url_for('repo_list') }}" class="btn btn-outline">取消</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}用户管理 - 固件管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🛡️ 用户管理</h1>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>ID</th><th>用户名</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>最后登录</th><th>固件数</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>{% if u.is_admin %}🛡️ 管理员{% else %}用户{% endif %}</td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>{{ u.last_login.strftime('%Y-%m-%d') if u.last_login else '从未' }}</td>
+            <td>{{ u.firmwares.count() }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ fw.name }} v{{ fw.version }} - 固件详情{% endblock %}
+{% block content %}
+<div class="detail-header">
+    <div>
+        <h1>{{ fw.name }} <code>v{{ fw.version }}</code></h1>
+        <div class="detail-badges">
+            <span class="fw-badge fw-badge-{{ fw.release_type }}">{{ fw.release_type }}</span>
+            {% if fw.hardware_model %}<span class="badge">📟 {{ fw.hardware_model }}</span>{% endif %}
+        </div>
+    </div>
+    <div class="detail-actions">
+        <a href="{{ url_for('firmware_download', fw_id=fw.id) }}" class="btn btn-primary btn-lg">⬇️ 下载固件</a>
+        {% if cu and (cu.id == fw.user_id or cu.is_admin) %}
+            <a href="{{ url_for('firmware_edit', fw_id=fw.id) }}" class="btn btn-outline">✏️ 编辑</a>
+            <form method="POST" action="{{ url_for('firmware_delete', fw_id=fw.id) }}" onsubmit="return confirm('确定删除？此操作不可恢复');" style="display:inline">
+                <button type="submit" class="btn btn-danger">🗑️ 删除</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="detail-card info-card">
+        <h3>📋 详细信息</h3>
+        <table class="info-table">
+            <tr><td>文件名称</td><td>{{ fw.filename }}</td></tr>
+            <tr><td>文件大小</td><td>{{ fw.file_size_display }}</td></tr>
+            <tr><td>MD5 校验</td><td><code class="hash">{{ fw.md5_hash or 'N/A' }}</code></td></tr>
+            <tr><td>所属产品</td><td>{% if fw.product %}{{ fw.product.name }}{% else %}—{% endif %}</td></tr>
+            <tr><td>上传者</td><td>{{ fw.uploader.username }}</td></tr>
+            <tr><td>上传时间</td><td>{{ fw.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+            <tr><td>更新时间</td><td>{{ fw.updated_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+            <tr><td>下载次数</td><td>{{ fw.download_count }}</td></tr>
+        </table>
+    </div>
+
+    <div class="detail-card">
+        <h3>📝 描述</h3>
+        <p class="description-text">{{ fw.description or '暂无描述' }}</p>
+    </div>
+</div>
+
+<div class="back-link">
+    <a href="{{ url_for('firmware_list') }}">← 返回固件库</a>
+</div>
+{% endblock %}

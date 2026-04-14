@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}博客文章{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📝 技术博客</h1>
+  <form class="search-form" method="GET">
+    <input type="text" name="q" value="{{ q }}" placeholder="搜索文章...">
+    <button type="submit">搜索</button>
+  </form>
+</div>
+
+{% if cu %}
+<a href="{{ url_for('post_new') }}" class="btn btn-primary">+ 写文章</a>
+{% endif %}
+
+{% if posts %}
+<div class="post-grid">
+  {% for p in posts %}
+  <article class="post-card">
+    <h2><a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a> <span class="visibility-badge">{{ '🌐 公开' if p.is_public else '🔒 私有' }}</span></h2>
+    <p class="summary">{{ p.summary }}</p>
+    <div class="meta">
+      <span>👤 {{ p.author.username }}</span>
+      <span>🕐 {{ p.created_at.strftime('%Y-%m-%d') }}</span>
+      <span>👁️ {{ p.view_count }}</span>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-msg">暂无文章</p>
+{% endif %}
+{% endblock %}

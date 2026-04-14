@@ -1,0 +1,1 @@
+-IF:/AiUlBuilder/LVGL/test_view/simulator -IF:/AiUlBuilder/LVGL/test_view/simulator/../ui_builder -IF:/AiUlBuilder/LVGL/test_view/simulator/lvgl -IF:/AiUlBuilder/LVGL/test_view/simulator/aic_widgets -IF:/AiUlBuilder/LVGL/test_view/simulator/freetype/include -IF:/AiUlBuilder/LVGL/test_view/simulator/freetype/include/freetype -IF:/AiUlBuilder/LVGL/test_view/simulator/ffmpeg/include

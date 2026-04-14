@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "istream": "c",
+        "ostream": "c",
+        "fstream": "c",
+        "system_error": "c",
+        "typeinfo": "c",
+        "functional": "c",
+        "custom.h": "c",
+        "aic_ui.h": "c",
+        "limits": "c",
+        "chrono": "c"
+    }
+}
