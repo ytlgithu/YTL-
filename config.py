@@ -5,23 +5,22 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'ytl-blog-secret-2026')
 
-    # Railway 持久化卷路径（挂载 /data 目录后才有值）
-    # 如果没有挂载卷，改为用 /tmp 作为临时目录（重启后数据会丢失）
-    RAILWAY_VOLUME = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '')
-
-    if RAILWAY_VOLUME:
-        DATA_DIR = RAILWAY_VOLUME
+    # Railway PostgreSQL（DATABASE_URL 由 Railway 自动注入，需通过 Reference Variable 引用）
+    # 本地开发时使用 SQLite
+    db_url = os.environ.get('DATABASE_URL', '')
+    if db_url:
+        # Railway PostgreSQL 格式兼容
+        SQLALCHEMY_DATABASE_URI = db_url.replace('postgres://', 'postgresql://', 1)
     else:
         DATA_DIR = os.path.join(BASE_DIR, 'instance')
+        os.makedirs(DATA_DIR, exist_ok=True)
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(DATA_DIR, "blog.db")}'
 
-    os.makedirs(DATA_DIR, exist_ok=True)
-
-    # 数据库：SQLite，存储在持久化卷中
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(DATA_DIR, "blog.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # 上传文件目录（持久化卷或临时目录）
-    UPLOAD_FOLDER = os.path.join(DATA_DIR, 'uploads')
+    # Railway 持久化卷路径（挂载 /data 目录后才有值）
+    _vol = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '')
+    UPLOAD_FOLDER = os.path.join(_vol, 'uploads') if _vol else os.path.join(BASE_DIR, 'uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024 * 1024  # 2GB
