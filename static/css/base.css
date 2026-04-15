@@ -10,8 +10,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Ar
 .nav a { color: #ddd; text-decoration: none; font-size: 14px; }
 .nav a:hover { color: #fff; }
 .btn-sm { padding: 4px 12px; border-radius: 4px; font-size: 13px; }
-.btn-outline { background: transparent; border: 1px solid #666; color: #ddd; }
-.btn-outline:hover { background: #444; }
+/* 导航栏按钮（深色背景用） */
+.nav-btn { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; text-decoration: none; transition: all .15s; border: 1px solid rgba(255,255,255,.4); color: #fff; background: transparent; }
+.nav-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.65); color: #fff; }
+.nav-btn:active { background: rgba(255,255,255,.2); }
 .btn-primary { background: #0366d6; border-color: #0366d6; color: #fff; }
 .btn-logout { background: #555; padding: 4px 12px; border-radius: 4px; }
 .badge-admin { background: #f85149; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
