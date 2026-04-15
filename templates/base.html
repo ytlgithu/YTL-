@@ -14,8 +14,21 @@
   <div class="container header-inner">
     <a href="{{ url_for('index') }}" class="logo">⚡ YTL Dev</a>
     <nav class="nav">
+      <a href="{{ url_for('index') }}">🏠 首页</a>
       <a href="{{ url_for('repo_list') }}">📦 仓库</a>
-      <a href="{{ url_for('post_list') }}">📝 博客</a>
+      <div class="nav-dropdown">
+        <a href="{{ url_for('post_list') }}" class="nav-dropdown-toggle">📝 博客 ▾</a>
+        <div class="nav-dropdown-menu" id="catMenu">
+          <a href="{{ url_for('post_list') }}">全部文章</a>
+          <a href="{{ url_for('post_list', cat='python') }}">🐍 Python</a>
+          <a href="{{ url_for('post_list', cat='c-cpp') }}">⚙️ C/C++</a>
+          <a href="{{ url_for('post_list', cat='embedded') }}">💾 嵌入式</a>
+          <a href="{{ url_for('post_list', cat='frontend') }}">🎨 前端</a>
+          <a href="{{ url_for('post_list', cat='devops') }}">🛠️ 运维 & 工具</a>
+          <a href="{{ url_for('post_list', cat='misc') }}">📌 杂谈</a>
+        </div>
+      </div>
+      <a href="{{ url_for('about') }}">ℹ️ 关于</a>
       {% if cu %}
         <a href="{{ url_for('repo_new') }}" class="btn-sm btn-outline">+ 新建仓库</a>
         <a href="{{ url_for('post_new') }}" class="btn-sm btn-outline">+ 写文章</a>

@@ -15,7 +15,7 @@ def cn_now():
     return datetime.now(CN_TIMEZONE)
 
 from config import Config
-from models import db, User, Repo, RepoFile, Post, OperationLog
+from models import db, User, Repo, RepoFile, Post, OperationLog, Category
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -283,6 +283,19 @@ def index():
         'file_count': RepoFile.query.count(),
     }
     return render_template('index.html', repos=repos, posts=posts, stats=stats)
+
+
+# ── 关于 ──────────────────────────────────────────────────────────────────────
+
+@app.route('/about')
+def about():
+    stats = {
+        'repo_count': Repo.query.count(),
+        'user_count': User.query.count(),
+        'post_count': Post.query.count(),
+        'file_count': RepoFile.query.count(),
+    }
+    return render_template('about.html', stats=stats)
 
 
 # ── 仓库 ──────────────────────────────────────────────────────────────────────
@@ -698,30 +711,41 @@ def repo_delete(repo_id):
 @app.route('/posts')
 def post_list():
     q = request.args.get('q', '').strip()
+    cat_slug = request.args.get('cat', '').strip()
     query = Post.query.filter_by(is_public=True)
     if q:
         query = query.filter(Post.title.contains(q) | Post.content.contains(q))
+    if cat_slug:
+        cat = Category.query.filter_by(slug=cat_slug).first_or_404()
+        query = query.filter_by(category_id=cat.id)
+    else:
+        cat = None
     posts = query.order_by(Post.created_at.desc()).all()
-    return render_template('post_list.html', posts=posts, q=q)
+    categories = Category.query.order_by(Category.order.asc()).all()
+    return render_template('post_list.html', posts=posts, q=q, cat=cat, categories=categories)
 
 
 @app.route('/posts/new', methods=['GET', 'POST'])
 @login_required
 def post_new():
+    categories = Category.query.order_by(Category.order.asc()).all()
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         content = request.form.get('content', '').strip()
         summary = request.form.get('summary', '').strip() or content[:150]
+        category_id = request.form.get('category_id', type=int)
         if not title or not content:
             flash('标题和内容不能为空', 'danger')
         else:
-            post = Post(title=title, content=content, summary=summary, user_id=session['user_id'])
+            post = Post(title=title, content=content, summary=summary,
+                        category_id=category_id or None,
+                        user_id=session['user_id'])
             db.session.add(post)
             db.session.commit()
             log_operation('create_post', target=f'文章:{title}')
             flash('文章发布成功', 'success')
             return redirect(url_for('post_detail', post_id=post.id))
-    return render_template('post_edit.html', post=None)
+    return render_template('post_edit.html', post=None, categories=categories)
 
 
 @app.route('/posts/<int:post_id>')
@@ -748,12 +772,14 @@ def post_edit(post_id):
         post.title = request.form.get('title', '').strip()
         post.content = request.form.get('content', '').strip()
         post.summary = request.form.get('summary', '').strip() or post.content[:150]
+        post.category_id = request.form.get('category_id', type=int) or None
         post.updated_at = cn_now()
         db.session.commit()
         log_operation('update_post', target=f'文章:{post.title}', detail='编辑文章')
         flash('文章已更新', 'success')
         return redirect(url_for('post_detail', post_id=post_id))
-    return render_template('post_edit.html', post=post)
+    categories = Category.query.order_by(Category.order.asc()).all()
+    return render_template('post_edit.html', post=post, categories=categories)
 
 
 @app.route('/posts/<int:post_id>/delete', methods=['POST'])
@@ -940,8 +966,20 @@ def init_db():
             db.session.add(admin)
             db.session.commit()
             print('[OK] Admin created: admin / admin123')
-        else:
-            print('[INFO] Database ready')
+        # 创建默认文章分类
+        default_cats = [
+            {'name': 'Python', 'slug': 'python', 'description': 'Python 编程相关', 'order': 1},
+            {'name': 'C/C++', 'slug': 'c-cpp', 'description': 'C 和 C++ 语言', 'order': 2},
+            {'name': '嵌入式', 'slug': 'embedded', 'description': '单片机 / RTOS / 驱动', 'order': 3},
+            {'name': '前端', 'slug': 'frontend', 'description': 'HTML / CSS / JS / Vue', 'order': 4},
+            {'name': '运维 & 工具', 'slug': 'devops', 'description': '服务器 / Docker / Git', 'order': 5},
+            {'name': '杂谈', 'slug': 'misc', 'description': '其他技术内容', 'order': 99},
+        ]
+        for c in default_cats:
+            if not Category.query.filter_by(slug=c['slug']).first():
+                db.session.add(Category(**c))
+        db.session.commit()
+        print('[INFO] Database ready')
 
 
 # Railway (Gunicorn) 启动时也执行

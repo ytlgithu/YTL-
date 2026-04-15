@@ -1,12 +1,47 @@
 {% extends "base.html" %}
 {% block title %}博客文章{% endblock %}
+{% block extra_css %}
+<style>
+.cat-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.cat-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all .2s;
+}
+.cat-tab:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.cat-tab.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.cat-count { font-size: 12px; opacity: .7; }
+.cat-tag {
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+</style>
+{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1>📝 技术博客</h1>
   <form class="search-form" method="GET">
+    {% if cat %}<input type="hidden" name="cat" value="{{ cat.slug }}">{% endif %}
     <input type="text" name="q" value="{{ q }}" placeholder="搜索文章...">
     <button type="submit">搜索</button>
   </form>
+</div>
+
+{# 分类筛选标签 #}
+<div class="cat-tabs">
+  <a href="{{ url_for('post_list') }}" class="cat-tab {% if not cat %}active{% endif %}">全部</a>
+  {% for c in categories %}
+  <a href="{{ url_for('post_list', cat=c.slug) }}" class="cat-tab {% if cat and cat.slug == c.slug %}active{% endif %}">
+    {{ c.name }} <span class="cat-count">({{ c.post_count }})</span>
+  </a>
+  {% endfor %}
 </div>
 
 {% if cu %}
@@ -17,9 +52,13 @@
 <div class="post-grid">
   {% for p in posts %}
   <article class="post-card">
-    <h2><a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a> <span class="visibility-badge">{{ '🌐 公开' if p.is_public else '🔒 私有' }}</span></h2>
+    <h2>
+      <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
+      <span class="visibility-badge">{{ '🌐 公开' if p.is_public else '🔒 私有' }}</span>
+    </h2>
     <p class="summary">{{ p.summary }}</p>
     <div class="meta">
+      {% if p.category %}<span class="cat-tag">{{ p.category.name }}</span>{% endif %}
       <span>👤 {{ p.author.username }}</span>
       <span>🕐 {{ p.created_at.strftime('%Y-%m-%d') }}</span>
       <span>👁️ {{ p.view_count }}</span>

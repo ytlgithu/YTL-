@@ -132,6 +132,23 @@ class RepoFile(db.Model):
         return mapping.get(self.ext, 'plaintext')
 
 
+class Category(db.Model):
+    """文章分类"""
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    slug = db.Column(db.String(50), unique=True, nullable=False)  # URL友好标识
+    description = db.Column(db.String(200))
+    order = db.Column(db.Integer, default=0)   # 排序权重
+    created_at = db.Column(db.DateTime, default=cn_now)
+
+    posts = db.relationship('Post', backref='category', lazy='dynamic')
+
+    @property
+    def post_count(self):
+        return self.posts.filter_by(is_public=True).count()
+
+
 class Post(db.Model):
     """博客文章"""
     __tablename__ = 'posts'
@@ -140,6 +157,7 @@ class Post(db.Model):
     content = db.Column(db.Text, nullable=False)
     summary = db.Column(db.String(300))
     is_public = db.Column(db.Boolean, default=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=cn_now, index=True)
     updated_at = db.Column(db.DateTime, default=cn_now, onupdate=cn_now)
