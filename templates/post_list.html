@@ -2,163 +2,71 @@
 {% block title %}博客文章{% endblock %}
 {% block extra_css %}
 <style>
-/* 页面标题区 */
-.page-hero {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #fff;
-  padding: 40px 0 32px;
-  margin-bottom: 36px;
-}
-.page-hero h1 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 6px;
-  color: #fff;
-}
-.page-hero p {
-  color: rgba(255,255,255,.6);
+.cat-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.cat-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
   font-size: 14px;
-  margin: 0;
-}
-.page-hero .hero-actions {
-  margin-top: 14px;
-}
-
-/* 搜索 */
-.search-wrap {
-  display: flex;
-  gap: 8px;
-  max-width: 480px;
-  margin-bottom: 0;
-}
-.search-wrap input {
-  flex: 1;
-  padding: 8px 14px;
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 8px;
-  background: rgba(255,255,255,.08);
-  color: #fff;
-  font-size: 14px;
-  outline: none;
-  transition: border-color .2s;
-}
-.search-wrap input::placeholder { color: rgba(255,255,255,.4); }
-.search-wrap input:focus { border-color: rgba(255,255,255,.5); }
-.search-wrap button {
-  padding: 8px 18px;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background .2s;
-}
-.search-wrap button:hover { background: #2563eb; }
-
-/* 文章卡片 */
-.post-list { list-style: none; margin: 0; padding: 0; }
-.post-item {
-  padding: 20px 0;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background .15s;
-}
-.post-item:last-child { border-bottom: none; }
-.post-item:hover { background: #fafafa; margin: 0 -16px; padding: 20px 16px; border-radius: 8px; }
-.post-item .post-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px;
-  color: #1a1a2e;
-}
-.post-item .post-title a {
-  color: #1a1a2e;
   text-decoration: none;
-  transition: color .15s;
+  transition: all .2s;
 }
-.post-item .post-title a:hover { color: #3b82f6; }
-.post-item .post-title .pub-badge {
-  font-size: 12px;
-  font-weight: 400;
-  color: #6b7280;
-  margin-left: 8px;
-}
-.post-item .post-summary {
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 10px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.post-item .post-meta {
-  font-size: 13px;
-  color: #9ca3af;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.post-item .post-meta .cat-tag {
+.cat-tab:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.cat-tab.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.cat-count { font-size: 12px; opacity: .7; }
+.cat-tag {
   background: #eff6ff;
   color: #2563eb;
   border-radius: 4px;
-  padding: 2px 8px;
+  padding: 1px 6px;
   font-size: 12px;
-}
-.post-item .post-meta .visibility-badge {
-  font-size: 12px;
-  color: #9ca3af;
-}
-.empty-msg {
-  text-align: center;
-  padding: 60px 0;
-  color: #9ca3af;
-  font-size: 16px;
 }
 </style>
 {% endblock %}
 {% block content %}
-<div class="page-hero">
-  <div style="max-width:800px;margin:0 auto;padding:0 20px;">
-    <h1>📝 技术博客</h1>
-    <p>记录学习与成长</p>
-    <div class="hero-actions">
-      <form class="search-wrap" method="GET">
-        <input type="text" name="q" value="{{ q }}" placeholder="搜索文章...">
-        <button type="submit">搜索</button>
-      </form>
+<div class="page-header">
+  <h1>📝 技术博客</h1>
+  <form class="search-form" method="GET">
+    {% if cat %}<input type="hidden" name="cat" value="{{ cat.slug }}">{% endif %}
+    <input type="text" name="q" value="{{ q }}" placeholder="搜索文章...">
+    <button type="submit">搜索</button>
+  </form>
+</div>
+
+{# 分类筛选标签 #}
+<div class="cat-tabs">
+  <a href="{{ url_for('post_list') }}" class="cat-tab {% if not cat %}active{% endif %}">全部</a>
+  {% for c in categories %}
+  <a href="{{ url_for('post_list', cat=c.slug) }}" class="cat-tab {% if cat and cat.slug == c.slug %}active{% endif %}">
+    {{ c.name }} <span class="cat-count">({{ c.post_count }})</span>
+  </a>
+  {% endfor %}
+</div>
+
+{% if cu %}
+<a href="{{ url_for('post_new') }}" class="btn btn-primary">+ 写文章</a>
+{% endif %}
+
+{% if posts %}
+<div class="post-grid">
+  {% for p in posts %}
+  <article class="post-card">
+    <h2>
+      <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
+      <span class="visibility-badge">{{ '🌐 公开' if p.is_public else '🔒 私有' }}</span>
+    </h2>
+    <p class="summary">{{ p.summary }}</p>
+    <div class="meta">
+      {% if p.category %}<span class="cat-tag">{{ p.category.name }}</span>{% endif %}
+      <span>👤 {{ p.author.username }}</span>
+      <span>🕐 {{ p.created_at.strftime('%Y-%m-%d') }}</span>
+      <span>👁️ {{ p.view_count }}</span>
     </div>
-  </div>
+  </article>
+  {% endfor %}
 </div>
-
-<div style="max-width:800px;margin:0 auto;padding:0 20px;">
-  {% if cu %}
-  <a href="{{ url_for('post_new') }}" class="btn btn-primary" style="margin-bottom:20px;display:inline-block;">+ 写文章</a>
-  {% endif %}
-
-  {% if posts %}
-  <ul class="post-list">
-    {% for p in posts %}
-    <li class="post-item">
-      <h2 class="post-title">
-        <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
-        {% if not p.is_public %}<span class="pub-badge">🔒 私有</span>{% endif %}
-      </h2>
-      <p class="post-summary">{{ p.summary or '暂无摘要' }}</p>
-      <div class="post-meta">
-        {% if p.category %}<span class="cat-tag">{{ p.category.name }}</span>{% endif %}
-        <span>👤 {{ p.author.username }}</span>
-        <span>🕐 {{ p.created_at.strftime('%Y-%m-%d') }}</span>
-        <span>👁️ {{ p.view_count }}</span>
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="empty-msg">暂无文章，{{ '快来写第一篇吧！' if cu else '去看看其他内容吧。' }}</p>
-  {% endif %}
-</div>
+{% else %}
+<p class="empty-msg">暂无文章</p>
+{% endif %}
 {% endblock %}
