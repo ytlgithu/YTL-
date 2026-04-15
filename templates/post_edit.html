@@ -16,12 +16,19 @@
   </div>
   <div class="form-group">
     <label>分类</label>
-    <select name="category_id" class="form-select">
-      <option value="">-- 不分类 --</option>
-      {% for c in categories %}
-      <option value="{{ c.id }}" {% if post and post.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-      {% endfor %}
-    </select>
+    <div class="custom-select" id="categorySelect">
+      <div class="custom-select-trigger">
+        <span class="custom-select-value">{% if post and post.category_id %}{% for c in categories %}{% if c.id == post.category_id %}{{ c.name }}{% endif %}{% endfor %}{% else %}-- 不分类 --{% endif %}</span>
+        <span class="custom-select-arrow">▾</span>
+      </div>
+      <div class="custom-select-options">
+        <div class="custom-select-option" data-value="">-- 不分类 --</div>
+        {% for c in categories %}
+        <div class="custom-select-option{% if post and post.category_id == c.id %} selected{% endif %}" data-value="{{ c.id }}">{{ c.name }}</div>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="category_id" id="categoryInput" value="{{ post.category_id if post else '' }}">
+    </div>
   </div>
   <div class="form-group">
     <label>内容 *（支持 Markdown）</label>
@@ -201,4 +208,40 @@ function uploadImage(input) {
   border-color: #007acc;
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var select = document.getElementById('categorySelect');
+  var trigger = select.querySelector('.custom-select-trigger');
+  var options = select.querySelectorAll('.custom-select-option');
+  var input = document.getElementById('categoryInput');
+  var valueSpan = select.querySelector('.custom-select-value');
+  
+  // 点击 trigger 打开/关闭下拉框
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    select.classList.toggle('open');
+  });
+  
+  // 点击选项选中
+  options.forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      var val = this.getAttribute('data-value');
+      var text = this.textContent;
+      input.value = val;
+      valueSpan.textContent = text;
+      options.forEach(function(o) { o.classList.remove('selected'); });
+      if (val) this.classList.add('selected');
+      select.classList.remove('open');
+    });
+  });
+  
+  // 点击其他地方关闭
+  document.addEventListener('click', function() {
+    select.classList.remove('open');
+  });
+});
+</script>
 {% endblock %}
