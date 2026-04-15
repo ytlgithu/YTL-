@@ -957,9 +957,32 @@ def operation_log():
 
 # ── init db ───────────────────────────────────────────────────────────────────
 
+def migrate_db():
+    """数据库迁移：为已有数据库添加新表/字段"""
+    with app.app_context():
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        
+        # 1. 检查 categories 表是否存在，不存在则创建
+        if 'categories' not in inspector.get_table_names():
+            db.create_all()
+            print('[MIGRATE] Created categories table')
+        
+        # 2. 检查 posts 表是否有 category_id 字段
+        columns = [c['name'] for c in inspector.get_columns('posts')]
+        if 'category_id' not in columns:
+            db.session.execute(text('ALTER TABLE posts ADD COLUMN category_id INTEGER REFERENCES categories(id)'))
+            db.session.commit()
+            print('[MIGRATE] Added category_id to posts table')
+        
+        print('[MIGRATE] Migration complete')
+
+
 def init_db():
     with app.app_context():
         db.create_all()
+        migrate_db()  # 执行迁移
+        
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', email='admin@ytl.local', is_admin=True)
             admin.set_password('admin123')
