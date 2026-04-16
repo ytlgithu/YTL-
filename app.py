@@ -1082,6 +1082,76 @@ def init_db():
 # Railway (Gunicorn) 启动时也执行
 init_db()
 
+# ========== 分类管理（仅管理员）==========
+
+@app.route('/categories')
+@admin_required
+def category_list():
+    categories = Category.query.order_by(Category.order.asc()).all()
+    return render_template('category_list.html', categories=categories)
+
+
+@app.route('/admin/category/new', methods=['POST'])
+@admin_required
+def category_new():
+    name = request.form.get('name', '').strip()
+    slug = request.form.get('slug', '').strip()
+    description = request.form.get('description', '').strip()
+    order = request.form.get('order', 0, type=int)
+    if not name or not slug:
+        flash('名称和标识不能为空', 'danger')
+        return redirect(url_for('category_list'))
+    if Category.query.filter_by(slug=slug).first():
+        flash('标识已存在', 'danger')
+        return redirect(url_for('category_list'))
+    cat = Category(name=name, slug=slug, description=description, order=order)
+    db.session.add(cat)
+    db.session.commit()
+    log_operation('category_new', target=f'分类:{name}', detail=f'创建分类「{name}」')
+    flash(f'分类「{name}」创建成功', 'success')
+    return redirect(url_for('category_list'))
+
+
+@app.route('/admin/category/<int:cat_id>/edit', methods=['POST'])
+@admin_required
+def category_edit(cat_id):
+    cat = Category.query.get_or_404(cat_id)
+    name = request.form.get('name', '').strip()
+    slug = request.form.get('slug', '').strip()
+    description = request.form.get('description', '').strip()
+    order = request.form.get('order', 0, type=int)
+    if not name or not slug:
+        flash('名称和标识不能为空', 'danger')
+        return redirect(url_for('category_list'))
+    if Category.query.filter(Category.slug == slug, Category.id != cat_id).first():
+        flash('标识已存在', 'danger')
+        return redirect(url_for('category_list'))
+    cat.name = name
+    cat.slug = slug
+    cat.description = description
+    cat.order = order
+    db.session.commit()
+    log_operation('category_edit', target=f'分类:{name}', detail=f'编辑分类「{name}」')
+    flash(f'分类「{name}」已更新', 'success')
+    return redirect(url_for('category_list'))
+
+
+@app.route('/admin/category/<int:cat_id>/delete', methods=['POST'])
+@admin_required
+def category_delete(cat_id):
+    cat = Category.query.get_or_404(cat_id)
+    name = cat.name
+    # 有文章的分类不能删
+    if cat.posts.count() > 0:
+        flash(f'分类「{name}」下有文章，无法删除', 'danger')
+        return redirect(url_for('category_list'))
+    db.session.delete(cat)
+    db.session.commit()
+    log_operation('category_delete', target=f'分类:{name}', detail=f'删除分类「{name}」')
+    flash(f'分类「{name}」已删除', 'success')
+    return redirect(url_for('category_list'))
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
