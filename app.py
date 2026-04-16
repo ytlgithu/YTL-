@@ -734,11 +734,13 @@ def post_new():
         content = request.form.get('content', '').strip()
         summary = request.form.get('summary', '').strip() or content[:150]
         category_id = request.form.get('category_id', type=int)
+        tags = request.form.get('tags', '').strip()
         if not title or not content:
             flash('标题和内容不能为空', 'danger')
         else:
             post = Post(title=title, content=content, summary=summary,
                         category_id=category_id or None,
+                        tags=tags or None,
                         user_id=session['user_id'])
             db.session.add(post)
             db.session.commit()
@@ -773,6 +775,7 @@ def post_edit(post_id):
         post.content = request.form.get('content', '').strip()
         post.summary = request.form.get('summary', '').strip() or post.content[:150]
         post.category_id = request.form.get('category_id', type=int) or None
+        post.tags = request.form.get('tags', '').strip() or None
         post.updated_at = cn_now()
         db.session.commit()
         log_operation('update_post', target=f'文章:{post.title}', detail='编辑文章')
@@ -990,6 +993,12 @@ def migrate_db():
             db.session.execute(text('ALTER TABLE posts ADD COLUMN category_id INTEGER REFERENCES categories(id)'))
             db.session.commit()
             print('[MIGRATE] Added category_id to posts table')
+
+        # 3. 检查 posts 表是否有 tags 字段
+        if 'tags' not in columns:
+            db.session.execute(text('ALTER TABLE posts ADD COLUMN tags VARCHAR(200)'))
+            db.session.commit()
+            print('[MIGRATE] Added tags to posts table')
         
         print('[MIGRATE] Migration complete')
 

@@ -2,7 +2,7 @@
 {% block title %}博客文章{% endblock %}
 {% block extra_css %}
 <style>
-.cat-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.cat-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
 .cat-tab {
   padding: 6px 14px;
   border-radius: 20px;
@@ -15,13 +15,106 @@
 .cat-tab:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
 .cat-tab.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
 .cat-count { font-size: 12px; opacity: .7; }
-.cat-tag {
-  background: #eff6ff;
-  color: #2563eb;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 12px;
+
+/* 文章卡片 */
+.post-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  transition: box-shadow .2s, border-color .2s;
 }
+.post-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 16px rgba(99,102,241,.08);
+}
+
+/* 元信息行：作者 · 日期 · 分类 */
+.post-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+.post-meta-line .sep { color: #d1d5db; }
+.post-meta-line .author-name { color: #374151; font-weight: 600; }
+.post-meta-line .cat-name {
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 标题 */
+.post-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+.post-title a {
+  color: inherit;
+  text-decoration: none;
+}
+.post-title a:hover { color: #4f46e5; }
+
+/* 摘要 */
+.post-summary {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0 0 12px 0;
+}
+
+/* 标签 */
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.post-tag {
+  color: #818cf8;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color .15s;
+}
+.post-tag:hover { color: #4f46e5; }
+
+/* 可见性角标 */
+.visibility-badge {
+  background: #f6f8fa;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #24292e;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* 新建按钮 */
+.write-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #4f46e5;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background .15s;
+  margin-bottom: 20px;
+}
+.write-btn:hover { background: #4338ca; }
 </style>
 {% endblock %}
 {% block content %}
@@ -45,27 +138,40 @@
 </div>
 
 {% if cu %}
-<a href="{{ url_for('post_new') }}" class="btn btn-primary">+ 写文章</a>
+<a href="{{ url_for('post_new') }}" class="write-btn">✏️ 写文章</a>
 {% endif %}
 
 {% if posts %}
-<div class="post-grid">
-  {% for p in posts %}
-  <article class="post-card">
-    <h2>
-      <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
-      <span class="visibility-badge">{{ '🌐 公开' if p.is_public else '🔒 私有' }}</span>
-    </h2>
-    <p class="summary">{{ p.summary }}</p>
-    <div class="meta">
-      {% if p.category %}<span class="cat-tag">{{ p.category.name }}</span>{% endif %}
-      <span>👤 {{ p.author.username }}</span>
-      <span>🕐 {{ p.created_at.strftime('%Y-%m-%d') }}</span>
-      <span>👁️ {{ p.view_count }}</span>
-    </div>
-  </article>
-  {% endfor %}
-</div>
+{% for p in posts %}
+<article class="post-card">
+  <div class="post-meta-line">
+    <span class="author-name">{{ p.author.username }}</span>
+    <span class="sep">•</span>
+    <span>{{ p.created_at.strftime('%Y-%m-%d') }}</span>
+    {% if p.category %}
+    <span class="sep">•</span>
+    <span class="cat-name">{{ p.category.name }}</span>
+    {% endif %}
+    {% if not p.is_public %}
+    <span class="sep">•</span>
+    <span class="visibility-badge">🔒 私有</span>
+    {% endif %}
+  </div>
+  <h2 class="post-title">
+    <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
+  </h2>
+  {% if p.summary %}
+  <p class="post-summary">{{ p.summary }}</p>
+  {% endif %}
+  {% if p.tag_list %}
+  <div class="post-tags">
+    {% for tag in p.tag_list %}
+    <span class="post-tag">#{{ tag }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</article>
+{% endfor %}
 {% else %}
 <p class="empty-msg">暂无文章</p>
 {% endif %}

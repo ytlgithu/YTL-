@@ -156,6 +156,7 @@ class Post(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     summary = db.Column(db.String(300))
+    tags = db.Column(db.String(200))   # 逗号分隔的标签，如 "Python,Django,全栈开发"
     is_public = db.Column(db.Boolean, default=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -164,6 +165,13 @@ class Post(db.Model):
     view_count = db.Column(db.Integer, default=0)
 
     author = db.relationship('User', foreign_keys=[user_id])
+
+    @property
+    def tag_list(self):
+        """返回标签列表"""
+        if not self.tags:
+            return []
+        return [t.strip() for t in self.tags.split(',') if t.strip()]
 
 
 class OperationLog(db.Model):

@@ -47,7 +47,7 @@
         <li>
           <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a>
           <span class="visibility-badge">{{ '🌐' if p.is_public else '🔒' }}</span>
-          <span class="post-meta">{{ p.author.username }} · {{ p.created_at|time_since }}</span>
+          <span class="post-meta">{{ p.author.username }} · {{ p.created_at|time_since }}{% if p.category %} · {{ p.category.name }}{% endif %}</span>
         </li>
         {% endfor %}
       </ul>
