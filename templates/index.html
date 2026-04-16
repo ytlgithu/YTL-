@@ -25,7 +25,7 @@
         <li>
           <a href="{{ url_for('repo_view', repo_id=r.id) }}" class="repo-name">{{ r.name }}</a>
           <span class="visibility-badge">{{ '🌐' if r.is_public else '🔒' }}</span>
-          <span class="repo-meta">{{ r.file_count }} 文件 · {{ r.total_size_display }} · {{ r.updated_at|time_since }}</span>
+          <span class="repo-meta">{{ r.file_count }} 文件 · {{ r.total_size_display }} · 👤 {{ r.owner.username }} · {{ r.updated_at|time_since }}</span>
           {% if r.description %}<p class="repo-desc">{{ r.description }}</p>{% endif %}
         </li>
         {% endfor %}
