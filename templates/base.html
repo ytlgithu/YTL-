@@ -18,13 +18,39 @@
       <a href="{{ url_for('index') }}">🏠 首页</a>
       <a href="{{ url_for('repo_list') }}">📦 仓库</a>
       <a href="{{ url_for('post_list') }}">📝 博客</a>
+      <a href="{{ url_for('message_board') }}">💬 留言板</a>
       <a href="{{ url_for('about') }}">ℹ️ 关于</a>
       {% if cu %}
         <a href="{{ url_for('repo_new') }}" class="nav-btn">+ 新建仓库</a>
         <a href="{{ url_for('post_new') }}" class="nav-btn">+ 写文章</a>
-        <a href="{{ url_for('profile') }}" class="user-nav-link"><img src="{{ cu.avatar|avatar_url }}" class="avatar-img avatar-sm" style="width:32px !important;height:32px !important;" alt="头像">{{ cu.username }}</a>
-        {% if cu.is_admin %}<a href="{{ url_for('user_list') }}" class="badge-admin">用户</a><a href="{{ url_for('operation_log') }}" class="badge-admin">日志</a>{% endif %}
-        <a href="{{ url_for('logout') }}" class="btn-logout">退出</a>
+
+        {# 用户下拉：头像+名字 #}
+        <div class="nav-dropdown">
+          <a href="#" class="nav-dropdown-toggle user-toggle">
+            <img src="{{ cu.avatar|avatar_url }}" class="avatar-sm" alt="头像">
+            <span>{{ cu.username }}</span>
+            <span class="caret">▾</span>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="{{ url_for('profile') }}">👤 个人中心</a>
+            <a href="{{ url_for('logout') }}">🚪 退出</a>
+          </div>
+        </div>
+
+        {# 管理下拉（admin可见） #}
+        {% if cu.is_admin %}
+        <div class="nav-dropdown">
+          <a href="#" class="nav-dropdown-toggle admin-toggle">
+            🛡️ 管理
+            <span class="caret">▾</span>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="{{ url_for('user_list') }}">👥 用户管理</a>
+            <a href="{{ url_for('operation_log') }}">📋 操作日志</a>
+          </div>
+        </div>
+        {% endif %}
+
       {% else %}
         <a href="{{ url_for('login') }}">登录</a>
         <a href="{{ url_for('register') }}" class="btn-sm btn-primary">注册</a>
@@ -53,5 +79,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>hljs.highlightAll();</script>
 {% block extra_js %}{% endblock %}
+<script>
+// 点击下拉触发器切换菜单，点击外部关闭
+document.querySelectorAll('.nav-dropdown-toggle').forEach(toggle => {
+  toggle.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.querySelectorAll('.nav-dropdown-menu.open').forEach(m => {
+      if (m !== toggle.nextElementSibling) m.classList.remove('open');
+    });
+    toggle.nextElementSibling.classList.toggle('open');
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.nav-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+});
+</script>
 </body>
 </html>

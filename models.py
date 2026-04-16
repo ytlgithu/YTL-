@@ -178,4 +178,16 @@ class OperationLog(db.Model):
     ip_address = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=cn_now, index=True)
 
+
+class Message(db.Model):
+    """留言板"""
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    username = db.Column(db.String(80))           # 发帖时快照
+    content = db.Column(db.String(1000), nullable=False)  # 留言内容（限1000字）
+    created_at = db.Column(db.DateTime, default=cn_now, index=True)
+
+    author = db.relationship('User', foreign_keys=[user_id])
+
     user = db.relationship('User', foreign_keys=[user_id])

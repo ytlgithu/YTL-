@@ -1,18 +1,58 @@
 {% extends "base.html" %}
 {% block title %}用户管理{% endblock %}
+{% block extra_css %}
+<style>
+.role-admin { color: #e11d48; font-weight: 600; }
+.role-user  { color: #6b7280; }
+.toggle-btn {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.toggle-btn:hover { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.toggle-btn.is-admin { border-color: #fda4af; color: #e11d48; }
+.toggle-btn.is-admin:hover { background: #e11d48; color: #fff; border-color: #e11d48; }
+.super-badge { background: #e11d48; color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="page-header"><h1>👥 用户管理</h1></div>
 
 <table class="data-table">
-  <thead><tr><th>用户名</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>最后登录</th></tr></thead>
+  <thead><tr><th>用户名</th><th>邮箱</th><th>角色</th><th>注册时间</th><th>最后登录</th><th>操作</th></tr></thead>
   <tbody>
     {% for u in users %}
     <tr>
       <td><strong>{{ u.username }}</strong></td>
       <td>{{ u.email }}</td>
-      <td>{{ '管理员' if u.is_admin else '普通用户' }}</td>
+      <td>
+        {% if u.username == 'admin' %}
+          <span class="role-admin">🛡️ 超级管理员</span>
+        {% elif u.is_admin %}
+          <span class="role-admin">管理员</span>
+        {% else %}
+          <span class="role-user">普通用户</span>
+        {% endif %}
+      </td>
       <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
       <td>{{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else '从未' }}</td>
+      <td>
+        {% if u.username != 'admin' %}
+          <form method="POST" action="{{ url_for('toggle_user_admin', user_id=u.id) }}" style="display:inline">
+            <button type="submit" class="toggle-btn {% if u.is_admin %}is-admin{% endif %}">
+              {% if u.is_admin %}撤销管理{% else %}设为管理{% endif %}
+            </button>
+          </form>
+        {% else %}
+          <span class="super-badge">不可操作</span>
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
   </tbody>

@@ -221,15 +221,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Ar
 }
 
 
-/* nav dropdown */
+/* nav dropdown - click to show */
 .nav-dropdown { position: relative; display: inline-block; }
-.nav-dropdown-toggle { cursor: pointer; }
-.nav-dropdown-toggle:hover { color: #1d4ed8; }
-.nav-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-width: 160px; z-index: 100; overflow: hidden; }
-.nav-dropdown-menu a { display: block; padding: 8px 16px; color: #374151; text-decoration: none; font-size: 14px; white-space: nowrap; }
-.nav-dropdown-menu a:hover { background: #eff6ff; color: #1d4ed8; }
+.nav-dropdown-toggle { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.nav-dropdown-toggle:hover { opacity: 0.85; }
+.caret { font-size: 10px; opacity: 0.6; }
+.nav-dropdown-menu { display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.14); min-width: 150px; z-index: 100; overflow: hidden; }
+.nav-dropdown-menu a { display: block; padding: 9px 16px; color: #374151; text-decoration: none; font-size: 14px; white-space: nowrap; transition: background .15s, color .15s; }
+.nav-dropdown-menu a:hover { background: #f1f5ff; color: #3b82f6; }
 .nav-dropdown-menu a:active { background: #3b82f6; color: #fff; }
-.nav-dropdown:hover .nav-dropdown-menu { display: block; }
+.nav-dropdown-menu.open { display: block; }
+.user-toggle .avatar-sm { border-radius: 50%; border: 2px solid rgba(255,255,255,.5); }
+.admin-toggle { color: #fff; }
+.admin-toggle:hover { opacity: 0.85; }
 
 /* 表单下拉框美化 */
 .form-select, select.form-input {

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<title>💬 留言板</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<style>
+.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+.msg-form { background:#fff; border-radius:12px; padding:20px; margin-bottom:28px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.msg-form textarea { width:100%; border:2px solid #e5e7eb; border-radius:8px; padding:12px; font-size:15px; min-height:100px; resize:vertical; font-family:inherit; box-sizing:border-box; }
+.msg-form textarea:focus { border-color:#3b82f6; outline:none; }
+.msg-list { display:flex; flex-direction:column; gap:12px; }
+.msg-card { background:#fff; border-radius:12px; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+.msg-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.msg-user { display:flex; align-items:center; gap:8px; font-weight:600; color:#1f2937; }
+.msg-avatar { width:32px; height:32px; border-radius:50%; background:#3b82f6; color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; }
+.msg-time { font-size:12px; color:#9ca3af; }
+.msg-content { color:#374151; line-height:1.7; font-size:15px; white-space:pre-wrap; word-break:break-word; }
+.msg-delete { margin-top:10px; }
+.empty-state { text-align:center; padding:48px 0; color:#9ca3af; }
+.empty-state p { margin-top:12px; font-size:15px; }
+.pagination { margin-top:24px; }
+</style>
+</head>
+<body>
+
+<div class="container main" style="max-width:760px; padding-top:32px;">
+
+  <div class="page-header">
+    <h1>💬 留言板</h1>
+    <span style="color:#9ca3af; font-size:14px;">{{ pagination.total }} 条留言</span>
+  </div>
+
+  {% if cu %}
+  <div class="msg-form">
+    <form method="POST" action="{{ url_for('post_message') }}">
+      <textarea name="content" placeholder="有什么想说的？写下你的留言...（限1000字）" maxlength="1000"></textarea>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button type="submit" class="btn btn-primary">发布留言</button>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; padding:14px 16px; margin-bottom:24px; color:#92400e; font-size:14px;">
+    💡 <a href="{{ url_for('login') }}" style="color:#1d4ed8;">登录</a>后即可留言
+  </div>
+  {% endif %}
+
+  <div class="msg-list">
+    {% for msg in pagination.items %}
+    <div class="msg-card">
+      <div class="msg-card-header">
+        <div class="msg-user">
+          <div class="msg-avatar">{{ msg.username[0].upper() }}</div>
+          <span>{{ msg.username }}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="msg-time">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          {% if cu and (cu.id == msg.user_id or cu.is_admin) %}
+          <form method="POST" action="{{ url_for('delete_message', msg_id=msg.id) }}" onsubmit="return confirm('确定删除这条留言？')">
+            <button type="submit" class="btn-sm" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:3px 10px; border-radius:6px; cursor:pointer; font-size:12px;">删除</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      <div class="msg-content">{{ msg.content }}</div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div style="font-size:48px;">💬</div>
+      <p>还没有留言，快来抢沙发！</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if pagination.pages > 1 %}
+  <div class="pagination" style="display:flex; gap:6px; justify-content:center; margin-top:32px;">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('message_board', page=pagination.prev_num) }}" class="btn-sm">← 上一页</a>
+    {% endif %}
+    <span style="padding:6px 14px; color:#6b7280; font-size:14px;">第 {{ pagination.page }} / {{ pagination.pages }} 页</span>
+    {% if pagination.has_next %}
+    <a href="{{ url_for('message_board', page=pagination.next_num) }}" class="btn-sm">下一页 →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+</body>
+</html>

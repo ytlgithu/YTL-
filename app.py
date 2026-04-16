@@ -15,7 +15,7 @@ def cn_now():
     return datetime.now(CN_TIMEZONE)
 
 from config import Config
-from models import db, User, Repo, RepoFile, Post, OperationLog, Category
+from models import db, User, Repo, RepoFile, Post, OperationLog, Category, Message
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -870,6 +870,22 @@ def user_list():
     return render_template('user_list.html', users=users)
 
 
+@app.route('/admin/user/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def toggle_user_admin(user_id):
+    target = User.query.get_or_404(user_id)
+    # 超级管理员（username=admin）不可被任何人操作
+    if target.username == 'admin':
+        flash('超级管理员权限不可修改', 'danger')
+        return redirect(url_for('user_list'))
+    target.is_admin = not target.is_admin
+    db.session.commit()
+    log_operation('toggle_admin', target=f'用户:{target.username}',
+                  detail=f"设置{target.username}为{'管理员' if target.is_admin else '普通用户'}")
+    flash(f'已更新 {target.username} 的权限', 'success')
+    return redirect(url_for('user_list'))
+
+
 @app.route('/profile')
 @login_required
 def profile():
@@ -976,6 +992,55 @@ def migrate_db():
             print('[MIGRATE] Added category_id to posts table')
         
         print('[MIGRATE] Migration complete')
+
+
+# ============================================================
+# 留言板
+# ============================================================
+
+@app.route('/messages')
+def message_board():
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    pagination = Message.query.order_by(Message.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False)
+    return render_template('message_board.html', pagination=pagination)
+
+
+@app.route('/messages', methods=['POST'])
+@login_required
+def post_message():
+    content_text = request.form.get('content', '').strip()
+    if not content_text:
+        flash('留言内容不能为空', 'warning')
+        return redirect(url_for('message_board'))
+    if len(content_text) > 1000:
+        flash('留言内容不能超过1000字', 'warning')
+        return redirect(url_for('message_board'))
+
+    u = current_user()
+    msg = Message(user_id=u.id, username=u.username, content=content_text)
+    db.session.add(msg)
+    db.session.commit()
+    log_operation('create_message', target='留言板', detail='发布留言')
+    flash('留言已发布', 'success')
+    return redirect(url_for('message_board'))
+
+
+@app.route('/messages/<int:msg_id>/delete', methods=['POST'])
+@login_required
+def delete_message(msg_id):
+    msg = Message.query.get_or_404(msg_id)
+    u = current_user()
+    if msg.user_id != u.id and not u.is_admin:
+        flash('无权删除他人留言', 'danger')
+        return redirect(url_for('message_board'))
+    db.session.delete(msg)
+    db.session.commit()
+    log_operation('delete_message', target='留言板', detail='删除留言')
+    flash('留言已删除', 'success')
+    return redirect(url_for('message_board'))
+
 
 
 def init_db():
