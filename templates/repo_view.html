@@ -168,6 +168,11 @@ window.addEventListener('pageshow', function(event) {
       <form method="POST" action="{{ url_for('repo_toggle_visibility', repo_id=repo.id) }}" style="display:inline">
         <button type="submit" class="toolbar-btn">{{ '🌐 设为公开' if not repo.is_public else '🔒 设为私有' }}</button>
       </form>
+      {% if cu and (cu.id == repo.user_id or cu.is_admin) %}
+      <form method="POST" action="{{ url_for('repo_delete', repo_id=repo.id) }}" style="display:inline" onsubmit="return confirm('确定删除仓库【{{ repo.name }}】？此操作不可恢复！')">
+        <button type="submit" class="toolbar-btn danger">🗑️ 删除仓库</button>
+      </form>
+      {% endif %}
     </div>
   </div>
 
