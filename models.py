@@ -134,17 +134,37 @@ class RepoFile(db.Model):
         return mapping.get(self.ext, 'plaintext')
 
     def to_html_table(self, repo_upload_dir):
-        """将 xlsx 转为 HTML 表格"""
-        import openpyxl
+        """将 xlsx 转为 HTML 表格（保留字体和填充颜色）"""
+        from openpyxl.styles import Color
+        from openpyxl.utils import get_column_letter
         fpath = os.path.join(repo_upload_dir, self.stored_name)
-        wb = openpyxl.load_workbook(fpath, read_only=True)
+        wb = openpyxl.load_workbook(fpath, data_only=False)
         ws = wb.active
+        
         html = '<table class="excel-table">'
-        for i, row in enumerate(ws.iter_rows(values_only=True)):
-            tag = 'th' if i == 0 else 'td'
+        for row_idx, row in enumerate(ws.iter_rows()):
             html += '<tr>'
             for cell in row:
-                html += f'<{tag}>{cell if cell is not None else ""}</{tag}>'
+                # 获取单元格值
+                value = cell.value if cell.value is not None else ""
+                # 获取字体颜色
+                font_color = ""
+                if cell.font and cell.font.color:
+                    color = cell.font.color
+                    if color.type == 'rgb' and color.rgb:
+                        font_color = f"color:{color.rgb};"
+                    elif color.type == 'theme':
+                        font_color = f"color:inherit;"
+                # 获取填充颜色
+                bg_color = ""
+                if cell.fill and cell.fill.start_color:
+                    color = cell.fill.start_color
+                    if color.type == 'rgb' and color.rgb:
+                        bg_color = f"background-color:{color.rgb};"
+                # 合并样式
+                style = f'style="{font_color}{bg_color}"' if font_color or bg_color else ""
+                tag = 'th' if row_idx == 0 else 'td'
+                html += f'<{tag} {style}>{value}</{tag}>'
             html += '</tr>'
         html += '</table>'
         wb.close()

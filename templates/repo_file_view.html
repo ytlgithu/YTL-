@@ -181,15 +181,67 @@
 {% elif rf.ext|lower in ['html','htm'] %}
 <iframe src="{{ url_for('repo_file_preview', repo_id=repo.id, file_id=rf.id) }}" style="width:100%;height:700px;border:1px solid #d0d7de;border-radius:6px" sandbox="allow-same-origin"></iframe>
 {% elif rf.ext|lower in ['xlsx','xls'] %}
-<div class="excel-view" style="overflow-x:auto;margin-bottom:20px;border:1px solid #d0d7de;border-radius:6px">
-{{ xlsx_html | safe }}
+<button class="btn btn-primary" onclick="showExcelModal()">📊 预览 Excel</button>
+<div class="excel-modal-overlay" id="excelModal">
+  <div class="excel-modal-box">
+    <div class="excel-modal-header">
+      <h3>{{ rf.filename }}</h3>
+      <span class="excel-modal-close" onclick="closeExcelModal()">×</span>
+    </div>
+    <div class="excel-modal-body">
+      <div class="excel-view" style="overflow:auto">{{ xlsx_html | safe }}</div>
+    </div>
+  </div>
 </div>
 <style>
+.excel-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+.excel-modal-overlay.show { display: flex; }
+.excel-modal-box {
+  background: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,.2);
+}
+.excel-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.excel-modal-header h3 { margin: 0; font-size: 16px; }
+.excel-modal-close {
+  font-size: 28px;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+.excel-modal-close:hover { color: #000; }
+.excel-modal-body { flex: 1; overflow: auto; padding: 20px; }
 .excel-view table { width:100%;border-collapse:collapse;font-size:13px }
 .excel-view th, .excel-view td { padding:8px 12px;border:1px solid #e5e7eb;white-space:nowrap }
 .excel-view th { background:#f6f8fa;font-weight:600 }
 .excel-view tr:hover { background:#f9fafb }
 </style>
+<script>
+function showExcelModal() { document.getElementById('excelModal').classList.add('show'); }
+function closeExcelModal() { document.getElementById('excelModal').classList.remove('show'); }
+document.getElementById('excelModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeExcelModal();
+});
+</script>
 {% elif rf.ext|lower in ['docx'] %}
 <div class="docx-view" style="background:#fff;padding:30px;border:1px solid #d0d7de;border-radius:6px;margin-bottom:20px;min-height:400px">
   <div style="color:#666;font-size:13px;margin-bottom:20px">📄 Word 文档预览</div>
