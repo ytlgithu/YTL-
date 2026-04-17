@@ -117,7 +117,8 @@ class RepoFile(db.Model):
     def is_text(self):
         return self.ext in {'c', 'h', 'cpp', 'hpp', 'py', 'js', 'ts', 'html', 'css',
                             'json', 'xml', 'yaml', 'yml', 'md', 'txt', 'sh', 'bat',
-                            'cmake', 'makefile', 'ini', 'cfg', 'conf', 'log', 's', 'asm'}
+                            'cmake', 'makefile', 'ini', 'cfg', 'conf', 'log', 's', 'asm',
+                            'csv', 'sql', 'log'}
 
     @property
     def lang(self):
