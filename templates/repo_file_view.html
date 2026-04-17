@@ -180,6 +180,21 @@
 </div>
 {% elif rf.ext|lower in ['html','htm'] %}
 <iframe src="{{ url_for('repo_file_preview', repo_id=repo.id, file_id=rf.id) }}" style="width:100%;height:700px;border:1px solid #d0d7de;border-radius:6px" sandbox="allow-same-origin"></iframe>
+{% elif rf.ext|lower in ['xlsx','xls'] %}
+<div class="excel-view" style="overflow-x:auto;margin-bottom:20px;border:1px solid #d0d7de;border-radius:6px">
+{{ xlsx_html | safe }}
+</div>
+<style>
+.excel-view table { width:100%;border-collapse:collapse;font-size:13px }
+.excel-view th, .excel-view td { padding:8px 12px;border:1px solid #e5e7eb;white-space:nowrap }
+.excel-view th { background:#f6f8fa;font-weight:600 }
+.excel-view tr:hover { background:#f9fafb }
+</style>
+{% elif rf.ext|lower in ['docx'] %}
+<div class="docx-view" style="background:#fff;padding:30px;border:1px solid #d0d7de;border-radius:6px;margin-bottom:20px;min-height:400px">
+  <div style="color:#666;font-size:13px;margin-bottom:20px">📄 Word 文档预览</div>
+  <a href="{{ url_for('repo_file_download', repo_id=repo.id, file_id=rf.id) }}" class="btn btn-primary">下载查看完整内容</a>
+</div>
 {% else %}
 <div class="binary-view">
   <p>这是一个二进制文件，无法直接预览。</p>

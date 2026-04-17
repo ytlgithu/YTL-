@@ -484,6 +484,7 @@ def repo_file_view(repo_id, file_id):
     rf = RepoFile.query.filter_by(id=file_id, repo_id=repo_id).first_or_404()
 
     content = None
+    xlsx_html = None
     if rf.is_text:
         fpath = os.path.join(repo_upload_dir(repo_id), rf.stored_name)
         try:
@@ -491,6 +492,12 @@ def repo_file_view(repo_id, file_id):
                 content = f.read()
         except Exception:
             content = None
+    # xlsx 预览
+    if rf.ext == 'xlsx':
+        try:
+            xlsx_html = rf.to_html_table(repo_upload_dir(repo_id))
+        except Exception as e:
+            xlsx_html = f"<pre>Excel解析失败: {e}</pre>"
 
     # 面包屑（动态去掉实际路径前缀）
     breadcrumbs = []
@@ -505,7 +512,7 @@ def repo_file_view(repo_id, file_id):
             breadcrumbs.append({'name': p, 'path': '/'.join(parts[:i+1])})
 
     return render_template('repo_file_view.html', repo=repo, rf=rf,
-                           content=content, breadcrumbs=breadcrumbs)
+                           content=content, xlsx_html=xlsx_html, breadcrumbs=breadcrumbs)
 
 
 @app.route('/repos/<int:repo_id>/file/<int:file_id>/edit', methods=['GET', 'POST'])

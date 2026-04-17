@@ -132,6 +132,23 @@ class RepoFile(db.Model):
         }
         return mapping.get(self.ext, 'plaintext')
 
+    def to_html_table(self, repo_upload_dir):
+        """将 xlsx 转为 HTML 表格"""
+        import openpyxl
+        fpath = os.path.join(repo_upload_dir, self.stored_name)
+        wb = openpyxl.load_workbook(fpath, read_only=True)
+        ws = wb.active
+        html = '<table class="excel-table">'
+        for i, row in enumerate(ws.iter_rows(values_only=True)):
+            tag = 'th' if i == 0 else 'td'
+            html += '<tr>'
+            for cell in row:
+                html += f'<{tag}>{cell if cell is not None else ""}</{tag}>'
+            html += '</tr>'
+        html += '</table>'
+        wb.close()
+        return html
+
 
 class Category(db.Model):
     """文章分类"""
