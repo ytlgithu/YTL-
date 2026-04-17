@@ -135,6 +135,7 @@ class RepoFile(db.Model):
 
     def to_html_table(self, repo_upload_dir):
         """将 xlsx 转为 HTML 表格（保留字体和填充颜色）"""
+        import openpyxl
         from openpyxl.styles import Color
         from openpyxl.utils import get_column_letter
         fpath = os.path.join(repo_upload_dir, self.stored_name)
