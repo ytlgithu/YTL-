@@ -180,21 +180,21 @@ class RepoFile(db.Model):
                     if c:
                         font_color = f"color:{c};"
                 
-                # 填充颜色 - Excel默认白色，无填充时显示白色
-                bg_color = "background-color:#ffffff;"
-                if cell.fill:
+                # 填充颜色
+                bg_color = ""
+                if cell.fill and cell.fill.fill_type != 'none':
                     fill = cell.fill
                     # 实心填充用 fgColor
-                    if hasattr(fill, 'fill_type') and fill.fill_type == 'solid':
-                        if hasattr(fill, 'fgColor') and fill.fgColor:
+                    if fill.fill_type == 'solid':
+                        if fill.fgColor and fill.fgColor.rgb:
                             c = get_color(fill.fgColor)
                             if c:
                                 bg_color = f"background-color:{c};"
                                 # 黑色背景用白字
-                                if c.lower() in ['#000000', '000000', 'black']:
+                                if c.lower() in ['#000000', '000000']:
                                     font_color = "color:#ffffff;"
                     # 其他类型用 start_color
-                    elif hasattr(fill, 'start_color') and fill.start_color:
+                    elif fill.fill_type and hasattr(fill, 'start_color') and fill.start_color:
                         c = get_color(fill.start_color)
                         if c:
                             bg_color = f"background-color:{c};"
