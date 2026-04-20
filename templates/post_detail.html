@@ -137,10 +137,14 @@
 .toc-content .toc-children {
   overflow: hidden;
   transition: max-height 0.3s ease;
+  max-height: 2000px;
 }
 
 .toc-content .toc-children.collapsed {
   max-height: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* H2 - 正常大小，略缩进 */
