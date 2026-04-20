@@ -476,7 +476,7 @@ function generateTOC() {
 
 // 更新目录高亮
 function updateActiveTOC(headings, tocContent) {
-  const headerHeight = 80;  // header 高度 + 间距
+  const headerHeight = 120;  // header 高度 + 间距（加大偏移量确保选中当前标题而非下一个）
   const scrollPos = window.scrollY + headerHeight;
   const windowHeight = window.innerHeight;
   const docHeight = document.documentElement.scrollHeight;
