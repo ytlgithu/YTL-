@@ -1196,13 +1196,16 @@ def sync_to_railway():
     # --- 同步 Users ---
     users = User.query.all()
     for u in users:
+        # 处理可能为空的字段
+        email_val = u.email if u.email else f'no-email-{u.id}@local'
         pg_cur.execute("""
-            INSERT INTO users (id, username, password_hash, avatar, is_admin, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO users (id, username, email, password_hash, avatar, is_admin, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
-                username=EXCLUDED.username, avatar=EXCLUDED.avatar,
-                is_admin=EXCLUDED.is_admin
-        """, (u.id, u.username, u.password_hash, u.avatar,
+                username=EXCLUDED.username, email=EXCLUDED.email,
+                avatar=EXCLUDED.avatar, is_admin=EXCLUDED.is_admin
+        """, (u.id, u.username, email_val, u.password_hash,
+              u.avatar or '',
               bool(u.is_admin) if u.is_admin is not None else False,
               u.created_at.replace(tzinfo=None) if u.created_at else None))
     results.append(f'✅ 同步用户: {len(users)} 条')
