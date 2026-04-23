@@ -1225,16 +1225,16 @@ def sync_to_railway():
     posts = Post.query.all()
     for p in posts:
         pg_cur.execute("""
-            INSERT INTO posts (id, title, slug, content, excerpt, category_id,
+            INSERT INTO posts (id, title, content, summary, category_id,
                 user_id, is_public, view_count, tags, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
-                title=EXCLUDED.title, slug=EXCLUDED.slug, content=EXCLUDED.content,
-                excerpt=EXCLUDED.excerpt, category_id=EXCLUDED.category_id,
+                title=EXCLUDED.title, content=EXCLUDED.content, summary=EXCLUDED.summary,
+                category_id=EXCLUDED.category_id,
                 user_id=EXCLUDED.user_id, is_public=EXCLUDED.is_public,
                 view_count=EXCLUDED.view_count, tags=EXCLUDED.tags,
                 created_at=EXCLUDED.created_at, updated_at=EXCLUDED.updated_at
-        """, (p.id, p.title, p.slug, p.content,
+        """, (p.id, p.title, p.content,
               p.summary if hasattr(p, 'summary') else '',
               p.category_id,
               p.user_id, bool(p.is_public) if p.is_public is not None else True,
