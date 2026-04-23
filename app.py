@@ -1214,11 +1214,11 @@ def sync_to_railway():
     cats = Category.query.all()
     for c in cats:
         pg_cur.execute("""
-            INSERT INTO categories (id, name, slug, description, sort_order)
+            INSERT INTO categories (id, name, slug, description, "order")
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, slug=EXCLUDED.slug,
-                description=EXCLUDED.description, sort_order=EXCLUDED.sort_order
-        """, (c.id, c.name, c.slug, c.description, c.order or 0))
+                description=EXCLUDED.description, "order"=EXCLUDED."order"
+        """, (c.id, c.name, c.slug, c.description, c.order if hasattr(c, 'order') else 0))
     results.append(f'✅ 同步分类: {len(cats)} 条')
 
     # --- 同步 Posts ---
@@ -1234,7 +1234,9 @@ def sync_to_railway():
                 user_id=EXCLUDED.user_id, is_public=EXCLUDED.is_public,
                 view_count=EXCLUDED.view_count, tags=EXCLUDED.tags,
                 created_at=EXCLUDED.created_at, updated_at=EXCLUDED.updated_at
-        """, (p.id, p.title, p.slug, p.content, p.summary, p.category_id,
+        """, (p.id, p.title, p.slug, p.content,
+              p.summary if hasattr(p, 'summary') else '',
+              p.category_id,
               p.user_id, bool(p.is_public) if p.is_public is not None else True,
               p.view_count or 0, p.tags,
               p.created_at.replace(tzinfo=None) if p.created_at else None,
