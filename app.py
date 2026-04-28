@@ -706,6 +706,9 @@ def repo_delete(repo_id):
         flash('无权限', 'danger')
         return redirect(url_for('repo_list'))
     log_operation('delete_repo', target=f'仓库:{repo.name}')
+    # 记录仓库下所有文件的删除（同步用）
+    for rf in repo.files:
+        log_deletion(rf)
     upload_dir = repo_upload_dir(repo_id)
     if os.path.exists(upload_dir):
         shutil.rmtree(upload_dir)
@@ -1704,8 +1707,71 @@ def sync_status_page():
 
 # ========== 后台同步线程（仅本地运行）==========
 
+def _sync_reconcile(peer_url, sync_token):
+    """对比远端和本地的关键表 ID 列表，删除本地多出的记录（远端已删除但同步遗漏的）"""
+    import requests as _requests
+    model_map = {t: m for t, m, _ in SYNC_TABLES}
+    # 只对比主要表（repo_files 太多，跳过）
+    reconcile_tables = ['users', 'categories', 'posts', 'repos', 'messages']
+    try:
+        # 拉取远端全量 ID 列表
+        remote_url = f'{peer_url.rstrip("/")}/api/sync?token={sync_token}'
+        resp = _requests.get(remote_url, timeout=60)
+        if resp.status_code != 200:
+            print(f'[RECONCILE] Failed to fetch remote data: HTTP {resp.status_code}')
+            return
+        remote_data = resp.json()
+        # 拉取本地全量 ID 列表
+        local_url = f'http://127.0.0.1:5000/api/sync?token={sync_token}'
+        local_resp = _requests.get(local_url, timeout=30)
+        if local_resp.status_code != 200:
+            print(f'[RECONCILE] Failed to fetch local data: HTTP {local_resp.status_code}')
+            return
+        local_data = local_resp.json()
+
+        for table_name in reconcile_tables:
+            remote_ids = set(r.get('id') for r in remote_data.get('changes', {}).get(table_name, []))
+            local_ids = set(r.get('id') for r in local_data.get('changes', {}).get(table_name, []))
+            only_local = local_ids - remote_ids
+            if only_local:
+                model_cls = model_map.get(table_name)
+                if not model_cls:
+                    continue
+                for rid in only_local:
+                    obj = model_cls.query.get(rid)
+                    if obj:
+                        # 记录删除日志
+                        log_deletion(obj)
+                        db.session.delete(obj)
+                        print(f'[RECONCILE] Deleted local {table_name} id={rid} (not in remote)')
+                try:
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'[RECONCILE] Commit error: {e}')
+        # 对比 repo_files（仅对比 ID 集合差异）
+        remote_rf_ids = set(r.get('id') for r in remote_data.get('changes', {}).get('repo_files', []))
+        local_rf_ids = set(r.get('id') for r in local_data.get('changes', {}).get('repo_files', []))
+        only_local_rf = local_rf_ids - remote_rf_ids
+        if only_local_rf:
+            model_cls = model_map.get('repo_files')
+            for rid in only_local_rf:
+                obj = model_cls.query.get(rid)
+                if obj:
+                    db.session.delete(obj)
+            try:
+                db.session.commit()
+                if only_local_rf:
+                    print(f'[RECONCILE] Deleted {len(only_local_rf)} local repo_files not in remote')
+            except Exception as e:
+                db.session.rollback()
+                print(f'[RECONCILE] repo_files commit error: {e}')
+    except Exception as e:
+        print(f'[RECONCILE] Error: {e}')
+
+
 def _run_sync_loop():
-    """后台同步线程：每60秒向远端推送本地变更并拉取远端变更"""
+    """后台同步线程：每10秒向远端推送本地变更并拉取远端变更，每5分钟做一次全量对比"""
     import time
     import requests as _requests
     
@@ -1719,10 +1785,20 @@ def _run_sync_loop():
     
     print(f'[SYNC] Background sync thread started, peer={peer_url}, interval={interval}s')
     
+    reconcile_counter = 0
+    reconcile_interval = 30  # 每30个同步周期做一次全量对比（10s*30=5分钟）
+    
     while True:
         time.sleep(interval)
+        reconcile_counter += 1
         try:
             with app.app_context():
+                # 定期全量对比（修复遗漏的删除）
+                if reconcile_counter >= reconcile_interval:
+                    reconcile_counter = 0
+                    print('[SYNC] Running reconciliation...')
+                    _sync_reconcile(peer_url, sync_token)
+                
                 # 获取上次同步时间
                 state = SyncState.query.filter_by(peer_url=peer_url).first()
                 if state and state.last_sync_at:
