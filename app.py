@@ -1786,7 +1786,7 @@ def _run_sync_loop():
     print(f'[SYNC] Background sync thread started, peer={peer_url}, interval={interval}s')
     
     reconcile_counter = 0
-    reconcile_interval = 30  # 每30个同步周期做一次全量对比（10s*30=5分钟）
+    reconcile_interval = 1  # 每个同步周期都做全量对比（10秒一次）
     
     while True:
         time.sleep(interval)
