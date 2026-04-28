@@ -1886,5 +1886,13 @@ def _start_sync_thread():
 
 
 if __name__ == '__main__':
+    # 本地直接运行时也启动同步线程
+    if not os.environ.get('SYNC_PEER_URL'):
+        os.environ['SYNC_PEER_URL'] = 'https://ytl-warehouse-blog-system.up.railway.app'
+    if not os.environ.get('SYNC_TOKEN'):
+        os.environ['SYNC_TOKEN'] = 'ytl-sync-2026-secret'
+    if not os.environ.get('SYNC_INTERVAL'):
+        os.environ['SYNC_INTERVAL'] = '10'
+    _start_sync_thread()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
