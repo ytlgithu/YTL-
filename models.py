@@ -292,6 +292,6 @@ class Message(db.Model):
     content = db.Column(db.String(1000), nullable=False)  # 留言内容（限1000字）
     created_at = db.Column(db.DateTime, default=cn_now, index=True)
 
-    author = db.relationship('User', foreign_keys=[user_id])
+    author = db.relationship('User', foreign_keys=[user_id], overlaps="user")
 
-    user = db.relationship('User', foreign_keys=[user_id])
+    user = db.relationship('User', foreign_keys=[user_id], overlaps="author")

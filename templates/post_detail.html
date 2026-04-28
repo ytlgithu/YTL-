@@ -467,7 +467,6 @@ function generateTOC() {
   
   // IntersectionObserver：精确监听每个标题何时进入视口
   if ('IntersectionObserver' in window) {
-    let lastActiveId = null;
     const io = new IntersectionObserver((entries) => {
       if (clickedId) return; // 点击锁期间跳过
       let bestEntry = null;
@@ -485,6 +484,22 @@ function generateTOC() {
       }
     }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
     headings.forEach(h => io.observe(h));
+
+    // 底部兜底：滚动到底部时高亮最后一个标题
+    window.addEventListener('scroll', function() {
+      if (clickedId) return;
+      const scrollBottom = window.innerHeight + window.scrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      // 距离底部不足 50px 时，强制高亮最后一个标题
+      if (docHeight - scrollBottom < 50) {
+        const lastHeading = headings[headings.length - 1];
+        if (lastHeading) {
+          tocContent.querySelectorAll('a').forEach(a => {
+            a.classList.toggle('active', a.getAttribute('data-target') === lastHeading.id);
+          });
+        }
+      }
+    }, { passive: true });
   } else {
     // 降级：旧浏览器用滚动监听
     let scrollTimer = null;
@@ -492,6 +507,18 @@ function generateTOC() {
       if (scrollTimer) clearTimeout(scrollTimer);
       scrollTimer = setTimeout(function() {
         if (!clickedId) {
+          // 底部兜底
+          const scrollBottom = window.innerHeight + window.scrollY;
+          const docHeight = document.documentElement.scrollHeight;
+          if (docHeight - scrollBottom < 50) {
+            const lastHeading = headings[headings.length - 1];
+            if (lastHeading) {
+              tocContent.querySelectorAll('a').forEach(a => {
+                a.classList.toggle('active', a.getAttribute('data-target') === lastHeading.id);
+              });
+            }
+            return;
+          }
           tocContent.querySelectorAll('a').forEach(a => {
             const el = document.getElementById(a.getAttribute('data-target'));
             if (el && el.getBoundingClientRect().top >= 0 && el.getBoundingClientRect().top <= 120) {

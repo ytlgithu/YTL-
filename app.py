@@ -1022,7 +1022,39 @@ def migrate_db():
             db.session.execute(text('ALTER TABLE posts ADD COLUMN tags VARCHAR(200)'))
             db.session.commit()
             print('[MIGRATE] Added tags to posts table')
-        
+
+        # 4. PostgreSQL 列名修复（Railway 旧表列名与模型不匹配）
+        db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        if db_url.startswith('postgresql'):
+            # posts.excerpt → summary
+            if 'excerpt' in columns and 'summary' not in columns:
+                try:
+                    db.session.execute(text('ALTER TABLE posts RENAME COLUMN excerpt TO summary'))
+                    db.session.commit()
+                    print('[MIGRATE] Renamed posts.excerpt → summary')
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'[MIGRATE] posts.excerpt rename failed (may not exist): {e}')
+            # posts.author_id → user_id
+            if 'author_id' in columns and 'user_id' not in columns:
+                try:
+                    db.session.execute(text('ALTER TABLE posts RENAME COLUMN author_id TO user_id'))
+                    db.session.commit()
+                    print('[MIGRATE] Renamed posts.author_id → user_id')
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'[MIGRATE] posts.author_id rename failed: {e}')
+            # categories.sort_order → "order"
+            cat_columns = [c['name'] for c in inspector.get_columns('categories')]
+            if 'sort_order' in cat_columns and 'order' not in cat_columns:
+                try:
+                    db.session.execute(text('ALTER TABLE categories RENAME COLUMN sort_order TO "order"'))
+                    db.session.commit()
+                    print('[MIGRATE] Renamed categories.sort_order → order')
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'[MIGRATE] categories.sort_order rename failed: {e}')
+
         print('[MIGRATE] Migration complete')
 
 
