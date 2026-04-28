@@ -1612,7 +1612,20 @@ def api_sync_apply():
             try:
                 obj = model_cls.query.get(item.get('id'))
                 if obj:
-                    # 更新已有记录
+                    # 更新已有记录 — 仅当远端数据更新时才覆盖（基于 updated_at 比较）
+                    remote_updated = _parse_val(item.get('updated_at'), 'updated_at')
+                    local_updated = getattr(obj, 'updated_at', None)
+                    if remote_updated and local_updated and remote_updated <= local_updated:
+                        # 远端数据不比本地新，跳过（避免本地较新的数据被覆盖）
+                        continue
+                    # 对于没有 updated_at 的表（如 users/categories/messages/operation_logs），
+                    # 用 created_at 做比较；如果都没有则仍然覆盖
+                    if remote_updated is None and local_updated is None:
+                        # 无时间戳可比较的表，仍然执行覆盖（保持原有行为）
+                        pass
+                    elif remote_updated is None and local_updated is not None:
+                        # 本地有 updated_at 但远端没有，说明远端数据可能是旧的，跳过
+                        continue
                     for f in fields:
                         if f in item and f != 'id':
                             setattr(obj, f, _parse_val(item[f], f))
@@ -1717,6 +1730,9 @@ def _run_sync_loop():
                 else:
                     since = ''
                 
+                # 记录本次同步开始时间（拉取前的时间点）
+                sync_start = cn_now()
+                
                 # 1. 拉取远端变更
                 try:
                     pull_url = f'{peer_url.rstrip("/")}/api/sync?since={since}&token={sync_token}'
@@ -1734,9 +1750,27 @@ def _run_sync_loop():
                 except Exception as e:
                     print(f'[SYNC] Pull error: {e}')
                 
-                # 2. 推送本地变更到远端
+                # 2. 先更新同步时间点，这样推送时 since 之后只包含本地真正产生的变更
+                #    （避免把刚从远端拉下来的数据又推回去）
                 try:
-                    push_pull_url = f'{"http://127.0.0.1:5000"}/api/sync?since={since}&token={sync_token}'
+                    if not state:
+                        state = SyncState(peer_url=peer_url)
+                        db.session.add(state)
+                    state.last_sync_at = sync_start
+                    state.last_status = 'syncing'
+                    state.last_message = 'Push in progress'
+                    db.session.commit()
+                except Exception as e:
+                    try:
+                        db.session.rollback()
+                    except Exception:
+                        pass
+                    print(f'[SYNC] State update error: {e}')
+                
+                # 3. 推送本地变更到远端（使用新的 since = sync_start）
+                try:
+                    # 用 sync_start 之后的变更，排除已同步的数据
+                    push_pull_url = f'{"http://127.0.0.1:5000"}/api/sync?since={sync_start.isoformat()}&token={sync_token}'
                     local_resp = _requests.get(push_pull_url, timeout=30)
                     if local_resp.status_code == 200:
                         local_data = local_resp.json()
@@ -1751,11 +1785,8 @@ def _run_sync_loop():
                 except Exception as e:
                     print(f'[SYNC] Push error: {e}')
                 
-                # 3. 更新同步状态
+                # 4. 更新同步最终状态
                 try:
-                    if not state:
-                        state = SyncState(peer_url=peer_url)
-                        db.session.add(state)
                     state.last_sync_at = cn_now()
                     state.last_status = 'success'
                     state.last_message = 'Sync completed'
