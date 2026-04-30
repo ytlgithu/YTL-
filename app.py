@@ -1675,11 +1675,10 @@ def api_sync_apply():
                              ('operation_logs', 'operation_logs_id_seq'),
                              ('messages', 'messages_id_seq')]:
                 try:
-                    max_id = db.session.execute(
-                        db.text(f'SELECT COALESCE(MAX(id), 0) FROM {tbl}')).scalar()
-                    if max_id > 0:
-                        db.session.execute(
-                            db.text(f"SELECT setval('{seq}', {max_id})"))
+                    # 只在 MAX(id) > 当前序列值时才重置，防止删除记录后ID重用
+                    db.session.execute(db.text(
+                        f"SELECT setval('{seq}', GREATEST(COALESCE((SELECT MAX(id) FROM {tbl}), 0), (SELECT last_value FROM {seq})))"
+                    ))
                 except Exception:
                     pass
             try:
@@ -1808,20 +1807,24 @@ def _sync_reconcile(peer_url, sync_token):
             # 远程多出的记录 → 检查本地是否有 SyncDeletion（证明本地明确删除过）
             # 有 SyncDeletion → 推送删除到远程（本地已删，远程遗漏了）
             # 无 SyncDeletion → 远程新建但本地还没拉取，不删远程，等pull拉取
+            # 注意：仅信任24小时内的 SyncDeletion，防止ID重用后旧删除记录误删新数据
+            deletion_cutoff = cn_now().replace(tzinfo=None) - __import__('datetime').timedelta(hours=24)
             only_remote = remote_ids - local_ids
             if only_remote:
                 for rid in only_remote:
-                    # 检查本地 SyncDeletion 记录
-                    has_local_deletion = SyncDeletion.query.filter_by(table_name=table_name, record_id=rid).first()
+                    # 检查本地 SyncDeletion 记录（必须是24小时内的，防止ID重用误删）
+                    has_local_deletion = SyncDeletion.query.filter_by(
+                        table_name=table_name, record_id=rid
+                    ).filter(SyncDeletion.deleted_at >= deletion_cutoff).first()
                     if has_local_deletion:
                         remote_deletions.append({
                             'table_name': table_name,
                             'record_id': rid
                         })
-                        print(f'[RECONCILE] Will delete remote {table_name} id={rid} (local has deletion record)')
+                        print(f'[RECONCILE] Will delete remote {table_name} id={rid} (local has recent deletion record)')
                     else:
-                        # 远程新建的记录，本地还没拉取，跳过
-                        print(f'[RECONCILE] Kept remote {table_name} id={rid} (no local deletion record, will pull)')
+                        # 远程新建的记录，本地还没拉取，或删除记录已过期（可能是ID重用），跳过
+                        print(f'[RECONCILE] Kept remote {table_name} id={rid} (no recent deletion record, will pull)')
 
         # 推送远程删除请求
         if remote_deletions:
@@ -1891,12 +1894,15 @@ def _sync_reconcile(peer_url, sync_token):
                 except Exception as e:
                     db.session.rollback()
                     print(f'[RECONCILE] repo_files commit error: {e}')
-        # 远程多出的 repo_files → 检查本地 SyncDeletion 再决定删除远程
+        # 远程多出的 repo_files → 检查本地 SyncDeletion 再决定删除远程（同样24小时时效检查）
         only_remote_rf = remote_rf_ids - local_rf_ids
         if only_remote_rf:
             rf_deletions = []
+            rf_deletion_cutoff = cn_now().replace(tzinfo=None) - __import__('datetime').timedelta(hours=24)
             for rid in only_remote_rf:
-                has_local_deletion = SyncDeletion.query.filter_by(table_name='repo_files', record_id=rid).first()
+                has_local_deletion = SyncDeletion.query.filter_by(
+                    table_name='repo_files', record_id=rid
+                ).filter(SyncDeletion.deleted_at >= rf_deletion_cutoff).first()
                 if has_local_deletion:
                     rf_deletions.append({'table_name': 'repo_files', 'record_id': rid})
                 else:
@@ -1949,6 +1955,22 @@ def _run_sync_loop():
                 
                 # 记录本次同步开始时间（拉取前的时间点）
                 sync_start = cn_now()
+                
+                # 0. 清理过期的 SyncDeletion 记录（超过24小时的），防止ID重用导致误删
+                try:
+                    cutoff = (sync_start.replace(tzinfo=None) - __import__('datetime').timedelta(hours=24))
+                    old_del = SyncDeletion.query.filter(SyncDeletion.deleted_at < cutoff).all()
+                    if old_del:
+                        for d in old_del:
+                            db.session.delete(d)
+                        db.session.commit()
+                        print(f'[SYNC] Cleaned {len(old_del)} stale SyncDeletion records (>24h)')
+                except Exception as e:
+                    try:
+                        db.session.rollback()
+                    except Exception:
+                        pass
+                    print(f'[SYNC] SyncDeletion cleanup error: {e}')
                 
                 # 1. 拉取远端变更
                 try:
