@@ -1925,7 +1925,7 @@ def _run_sync_loop():
     
     peer_url = os.environ.get('SYNC_PEER_URL', '')  # 远端地址，如 https://xxx.up.railway.app
     sync_token = SYNC_TOKEN
-    interval = int(os.environ.get('SYNC_INTERVAL', '10'))  # 秒
+    interval = int(os.environ.get('SYNC_INTERVAL', '60'))  # 秒
     
     if not peer_url:
         print('[SYNC] No SYNC_PEER_URL set, sync thread disabled')
@@ -2048,7 +2048,7 @@ if __name__ == '__main__':
     if not os.environ.get('SYNC_TOKEN'):
         os.environ['SYNC_TOKEN'] = 'ytl-sync-2026-secret'
     if not os.environ.get('SYNC_INTERVAL'):
-        os.environ['SYNC_INTERVAL'] = '10'
+        os.environ['SYNC_INTERVAL'] = '60'
     _start_sync_thread()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
